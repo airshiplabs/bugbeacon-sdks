@@ -1,6 +1,7 @@
-# BugBeacon widget
+# BugBeacon SDKs
 
-A framework-independent Report Bug button that opens the BugBeacon hosted form.
+This repository currently contains `@bugbeacon/browser`, a framework-independent
+Report Bug button that opens the BugBeacon hosted form.
 Reporters enter their text inside the service iframe. GitHub credentials and
 destinations stay in the BugBeacon service.
 
@@ -27,11 +28,11 @@ publication is assumed.
 Use a reviewed full commit ID when installing from the public repository:
 
 ```sh
-npm install github:airshiplabs/bugbeacon-widget#REVIEWED_FULL_COMMIT_ID
+npm install github:airshiplabs/bugbeacon-sdks#REVIEWED_FULL_COMMIT_ID
 ```
 
 ```js
-import { defineBugBeacon } from "@bugbeacon/widget";
+import { defineBugBeacon } from "@bugbeacon/browser";
 
 defineBugBeacon();
 ```

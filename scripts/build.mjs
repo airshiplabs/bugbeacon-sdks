@@ -5,7 +5,7 @@ const shared = {
   target: "es2022",
   legalComments: "inline",
   banner: {
-    js: "/*! @bugbeacon/widget v0.0.0 | MIT License | https://github.com/airshiplabs/bugbeacon-widget */",
+    js: "/*! @bugbeacon/browser v0.0.0 | MIT License | https://github.com/airshiplabs/bugbeacon-sdks */",
   },
 };
 

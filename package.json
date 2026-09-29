@@ -1,7 +1,7 @@
 {
-  "name": "@bugbeacon/widget",
+  "name": "@bugbeacon/browser",
   "version": "0.0.0",
-  "description": "An accessible Report Bug button for the BugBeacon hosted form.",
+  "description": "Browser SDK with an accessible Report Bug button for the BugBeacon hosted form.",
   "type": "module",
   "license": "MIT",
   "main": "./dist/index.js",
