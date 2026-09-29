@@ -115,6 +115,10 @@ test("forged source, origin, protocol, and extra fields cannot close the dialog"
 }) => {
   await mount(page);
   await page.getByRole("button", { name: "Report Bug", exact: true }).click();
+  await expect(page.frameLocator("iframe").locator("body")).toHaveAttribute(
+    "data-initialized",
+    "true",
+  );
   await page.evaluate((origin) => {
     const source = document
       .querySelector("bug-beacon")!
@@ -135,10 +139,19 @@ test("forged source, origin, protocol, and extra fields cannot close the dialog"
       { origin, source, data: { type: "close", version: 1 } },
       { origin, source, data: null },
     ];
-    for (const candidate of candidates)
-      window.dispatchEvent(new MessageEvent("message", candidate));
+    for (const { source, ...init } of candidates) {
+      const event = new MessageEvent("message", init);
+      // Firefox rejects cross-origin sources passed to the MessageEvent constructor.
+      Object.defineProperty(event, "source", { value: source });
+      window.dispatchEvent(event);
+    }
   }, serviceOrigin);
   await expect(page.getByRole("dialog")).toBeVisible();
+  await page
+    .frameLocator("iframe")
+    .getByRole("button", { name: "Done", exact: true })
+    .click();
+  await expect(page.getByRole("dialog")).not.toBeVisible();
 });
 
 test("removal and reinsertion release the modal and retain one working listener", async ({
