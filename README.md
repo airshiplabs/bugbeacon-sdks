@@ -31,6 +31,9 @@ Use a reviewed full commit ID when installing from the public repository:
 npm install github:airshiplabs/bugbeacon-sdks#REVIEWED_FULL_COMMIT_ID
 ```
 
+With npm 12, add `--allow-git=root` to the install command to permit this direct
+Git dependency.
+
 ```js
 import { defineBugBeacon } from "@bugbeacon/browser";
 
