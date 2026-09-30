@@ -1,6 +1,6 @@
 # BugBeacon SDKs
 
-This repository currently contains `@bugbeacon/browser`, a framework-independent
+This repository currently contains `@airshiplabs/bugbeacon`, a framework-independent
 Report Bug button that opens the BugBeacon hosted form.
 Reporters enter their text inside the service iframe. GitHub credentials and
 destinations stay in the BugBeacon service.
@@ -20,22 +20,18 @@ your application's exact origin. Replace the example project ID below.
 
 The script registers the custom element automatically. It also exposes
 `window.BugBeacon.defineBugBeacon()`. Repeated registration is harmless.
-The hosted script requires a deployed BugBeacon service. No npm registry
-publication is assumed.
+The hosted script requires a deployed BugBeacon service.
 
-## Install from GitHub
+## Install from npm
 
-Use a reviewed full commit ID when installing from the public repository:
+Use Node.js 24 or later for package installation and tooling.
 
 ```sh
-npm install github:airshiplabs/bugbeacon-sdks#REVIEWED_FULL_COMMIT_ID
+npm install @airshiplabs/bugbeacon
 ```
 
-With npm 12, add `--allow-git=root` to the install command to permit this direct
-Git dependency.
-
 ```js
-import { defineBugBeacon } from "@bugbeacon/browser";
+import { defineBugBeacon } from "@airshiplabs/bugbeacon";
 
 defineBugBeacon();
 ```
@@ -47,6 +43,17 @@ The ESM entry does not automatically register it.
 The repository includes `dist/index.js`, TypeScript declarations, and the plain
 script `dist/bugbeacon.js`. A package file allowlist includes only distribution,
 source, examples, this README, and the MIT license.
+
+## Install from GitHub
+
+You can also install from a reviewed full commit ID in the public repository:
+
+```sh
+npm install github:airshiplabs/bugbeacon-sdks#REVIEWED_FULL_COMMIT_ID
+```
+
+With npm 12, add `--allow-git=root` to permit this direct Git dependency.
+Use the same import and registration shown above.
 
 ## Configuration
 
