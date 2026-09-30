@@ -1,6 +1,6 @@
 # BugBeacon SDKs
 
-This repository currently contains `@airshiplabs/bugbeacon`, a framework-independent
+This repository currently contains `@bugbeacon/browser`, a framework-independent
 Report Bug button that opens the BugBeacon hosted form.
 Reporters enter their text inside the service iframe. GitHub credentials and
 destinations stay in the BugBeacon service.
@@ -27,11 +27,11 @@ The hosted script requires a deployed BugBeacon service.
 Use Node.js 24 or later for package installation and tooling.
 
 ```sh
-npm install @airshiplabs/bugbeacon
+npm install @bugbeacon/browser
 ```
 
 ```js
-import { defineBugBeacon } from "@airshiplabs/bugbeacon";
+import { defineBugBeacon } from "@bugbeacon/browser";
 
 defineBugBeacon();
 ```
