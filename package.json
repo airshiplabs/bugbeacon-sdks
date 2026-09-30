@@ -1,9 +1,21 @@
 {
-  "name": "@bugbeacon/browser",
-  "version": "0.0.0",
+  "name": "@airshiplabs/bugbeacon",
+  "version": "0.1.0",
   "description": "Browser SDK with an accessible Report Bug button for the BugBeacon hosted form.",
   "type": "module",
   "license": "MIT",
+  "homepage": "https://bugbeacon.ai",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/airshiplabs/bugbeacon-sdks.git"
+  },
+  "bugs": {
+    "url": "https://github.com/airshiplabs/bugbeacon-sdks/issues"
+  },
+  "publishConfig": {
+    "access": "public",
+    "registry": "https://registry.npmjs.org/"
+  },
   "main": "./dist/index.js",
   "module": "./dist/index.js",
   "types": "./dist/index.d.ts",
