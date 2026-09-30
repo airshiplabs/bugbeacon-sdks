@@ -10,7 +10,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Added
 
-- Initial public release of `@airshiplabs/bugbeacon` with the `<bug-beacon>` element,
+- Initial public release of `@bugbeacon/browser` with the `<bug-beacon>` element,
   ESM imports, TypeScript declarations, and a standalone browser script.
 - Hosted report form, keyboard controls, focus restoration, origin-checked
   messaging, and lifecycle cleanup without collecting host-page contents.

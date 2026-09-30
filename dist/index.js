@@ -1,4 +1,4 @@
-/*! @airshiplabs/bugbeacon v0.1.0 | MIT License | https://github.com/airshiplabs/bugbeacon-sdks */
+/*! @bugbeacon/browser v0.1.0 | MIT License | https://github.com/airshiplabs/bugbeacon-sdks */
 
 // src/index.ts
 var projectIdPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;

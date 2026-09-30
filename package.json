@@ -1,5 +1,5 @@
 {
-  "name": "@airshiplabs/bugbeacon",
+  "name": "@bugbeacon/browser",
   "version": "0.1.0",
   "description": "Browser SDK with an accessible Report Bug button for the BugBeacon hosted form.",
   "type": "module",

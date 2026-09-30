@@ -1,4 +1,4 @@
-/*! @airshiplabs/bugbeacon v0.1.0 | MIT License | https://github.com/airshiplabs/bugbeacon-sdks */
+/*! @bugbeacon/browser v0.1.0 | MIT License | https://github.com/airshiplabs/bugbeacon-sdks */
 "use strict";
 var BugBeacon = (() => {
   var __defProp = Object.defineProperty;
