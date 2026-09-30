@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>BugBeacon browser SDK example</title>
+    <script src="../dist/bugbeacon.js" defer></script>
+    <style>
+      body {
+        max-width: 620px;
+        margin: 64px auto;
+        padding: 24px;
+        color: #182d45;
+        background: #f1f6fc;
+        font:
+          16px/1.6 system-ui,
+          sans-serif;
+      }
+      h1 {
+        line-height: 1.2;
+      }
+      code {
+        overflow-wrap: anywhere;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>Report a bug from your application.</h1>
+    <p>
+      This is a plain HTML host application. The button opens the BugBeacon
+      service in a modal.
+    </p>
+    <p>
+      Set your public project ID and service endpoint in this file. For this
+      local example, allow <code>http://localhost:4100</code> in BugBeacon.
+    </p>
+    <bug-beacon
+      project-id="00000000-0000-4000-8000-000000000000"
+      endpoint="http://localhost:3000"
+    ></bug-beacon>
+  </body>
+</html>

@@ -1,0 +1,44 @@
+{
+  "name": "@bugbeacon/browser",
+  "version": "0.0.0",
+  "description": "Browser SDK with an accessible Report Bug button for the BugBeacon hosted form.",
+  "type": "module",
+  "license": "MIT",
+  "main": "./dist/index.js",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist",
+    "src",
+    "LICENSE",
+    "README.md",
+    "examples"
+  ],
+  "sideEffects": [
+    "./dist/bugbeacon.js"
+  ],
+  "engines": {
+    "node": ">=24"
+  },
+  "scripts": {
+    "build": "node scripts/build.mjs && tsc --emitDeclarationOnly",
+    "typecheck": "tsc --noEmit",
+    "lint": "tsc --noEmit",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "test": "npm run build && playwright test",
+    "check": "npm run format:check && npm run typecheck && npm test"
+  },
+  "devDependencies": {
+    "@playwright/test": "1.63.0",
+    "esbuild": "0.28.2",
+    "prettier": "3.6.2",
+    "typescript": "7.0.2"
+  }
+}
