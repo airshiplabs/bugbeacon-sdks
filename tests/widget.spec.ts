@@ -63,8 +63,11 @@ test("plain script registers once and embeds only the project and parent origin"
 }) => {
   const { requests, messages } = await mount(page);
   await page.evaluate(() => {
-    (window as any).BugBeacon.defineBugBeacon();
-    (window as any).BugBeacon.defineBugBeacon();
+    const { BugBeacon } = window as unknown as {
+      BugBeacon: { defineBugBeacon(): void };
+    };
+    BugBeacon.defineBugBeacon();
+    BugBeacon.defineBugBeacon();
   });
   await expect(
     page.getByRole("button", { name: "Report Bug", exact: true }),
