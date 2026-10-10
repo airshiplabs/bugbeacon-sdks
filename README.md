@@ -6,9 +6,11 @@ Bug reports from your site go to GitHub Projects (Projects v2) as draft items.
 
 ## Install
 
+```
 Tell your coding agent: Install BugBeacon by following https://github.com/airshiplabs/bugbeacon-sdks/blob/main/INSTALL.md
+```
 
-Full install, configuration, GitHub setup, and troubleshooting: [INSTALL.md](INSTALL.md).
+Details: [INSTALL.md](INSTALL.md).
 
 [bugbeacon.ai](https://bugbeacon.ai) · [Documentation](https://bugbeacon.ai/docs)
 
