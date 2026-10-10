@@ -14,12 +14,12 @@ Product site: [bugbeacon.ai](https://bugbeacon.ai). User-facing docs: [bugbeacon
 
 Inspect the host repository and pick one path:
 
-| Host stack | Prefer |
-| --- | --- |
+| Host stack                                             | Prefer                                               |
+| ------------------------------------------------------ | ---------------------------------------------------- |
 | Plain HTML, static site, or CMS with a layout template | **Script tag** (`https://bugbeacon.ai/widget/v1.js`) |
-| React, Next.js, Vue, Svelte, or any bundler-based app | **npm** (`@bugbeacon/browser` + `defineBugBeacon()`) |
-| No `package.json`, or you cannot add a dependency | **Script tag** |
-| Server-rendered UI (Next.js, Nuxt, SvelteKit, etc.) | **npm** and register on the **client only** |
+| React, Next.js, Vue, Svelte, or any bundler-based app  | **npm** (`@bugbeacon/browser` + `defineBugBeacon()`) |
+| No `package.json`, or you cannot add a dependency      | **Script tag**                                       |
+| Server-rendered UI (Next.js, Nuxt, SvelteKit, etc.)    | **npm** and register on the **client only**          |
 
 **Script tag:** the file registers `<bug-beacon>` automatically and exposes `window.BugBeacon.defineBugBeacon()`. Repeated registration is harmless.
 
@@ -59,17 +59,17 @@ With npm 12, add `--allow-git=root` for a direct Git dependency. Use the same `d
 
 The element observes only these attributes (see `src/index.ts`):
 
-| Attribute | Required | Value |
-| --- | --- | --- |
-| `project-id` | Yes | Public application UUID (RFC 4122 version 4). Invalid IDs disable the button. |
-| `endpoint` | Yes | BugBeacon service origin. Production: `https://bugbeacon.ai`. |
+| Attribute    | Required | Value                                                                         |
+| ------------ | -------- | ----------------------------------------------------------------------------- |
+| `project-id` | Yes      | Public application UUID (RFC 4122 version 4). Invalid IDs disable the button. |
+| `endpoint`   | Yes      | BugBeacon service origin. Production: `https://bugbeacon.ai`.                 |
 
 **`endpoint` rules:**
 
 - Must be a valid origin: scheme + host + optional port only (`pathname` must be `/`, no `username`, `password`, `search`, or `hash`).
 - **HTTPS** in production.
 - **HTTP** only for loopback development when **both** the BugBeacon service and the host page use loopback hostnames (`localhost`, `127.*`, or `::1`).
-- Invalid `project-id` or `endpoint` disables the button and shows: *Bug reporting is unavailable. Check the widget configuration.*
+- Invalid `project-id` or `endpoint` disables the button and shows: _Bug reporting is unavailable. Check the widget configuration._
 
 There are no other element attributes, properties, or slots in this SDK.
 
@@ -85,10 +85,10 @@ The widget sends only the public project ID and the parent page’s `window.loca
 
 Use public env vars your framework exposes to the browser, then bind them to attributes:
 
-| Variable (suggested) | Maps to | Default if unset |
-| --- | --- | --- |
-| `BUGBEACON_PROJECT_ID` / `NEXT_PUBLIC_BUGBEACON_PROJECT_ID` / `VITE_BUGBEACON_PROJECT_ID` / `PUBLIC_BUGBEACON_PROJECT_ID` | `project-id` | None (required) |
-| `BUGBEACON_ENDPOINT` / `NEXT_PUBLIC_BUGBEACON_ENDPOINT` / `VITE_BUGBEACON_ENDPOINT` / `PUBLIC_BUGBEACON_ENDPOINT` | `endpoint` | `https://bugbeacon.ai` |
+| Variable (suggested)                                                                                                      | Maps to      | Default if unset       |
+| ------------------------------------------------------------------------------------------------------------------------- | ------------ | ---------------------- |
+| `BUGBEACON_PROJECT_ID` / `NEXT_PUBLIC_BUGBEACON_PROJECT_ID` / `VITE_BUGBEACON_PROJECT_ID` / `PUBLIC_BUGBEACON_PROJECT_ID` | `project-id` | None (required)        |
+| `BUGBEACON_ENDPOINT` / `NEXT_PUBLIC_BUGBEACON_ENDPOINT` / `VITE_BUGBEACON_ENDPOINT` / `PUBLIC_BUGBEACON_ENDPOINT`         | `endpoint`   | `https://bugbeacon.ai` |
 
 Never put GitHub tokens or other secrets in these variables or in HTML.
 
@@ -133,7 +133,9 @@ export function ReportBug() {
   return (
     <bug-beacon
       project-id={projectId}
-      endpoint={import.meta.env.VITE_BUGBEACON_ENDPOINT ?? "https://bugbeacon.ai"}
+      endpoint={
+        import.meta.env.VITE_BUGBEACON_ENDPOINT ?? "https://bugbeacon.ai"
+      }
     />
   );
 }
@@ -157,7 +159,9 @@ export function BugBeaconWidget() {
   return (
     <bug-beacon
       project-id={process.env.NEXT_PUBLIC_BUGBEACON_PROJECT_ID!}
-      endpoint={process.env.NEXT_PUBLIC_BUGBEACON_ENDPOINT ?? "https://bugbeacon.ai"}
+      endpoint={
+        process.env.NEXT_PUBLIC_BUGBEACON_ENDPOINT ?? "https://bugbeacon.ai"
+      }
     />
   );
 }
@@ -182,10 +186,7 @@ onMounted(() => {
 </script>
 
 <template>
-  <bug-beacon
-    :project-id="projectId"
-    endpoint="https://bugbeacon.ai"
-  />
+  <bug-beacon :project-id="projectId" endpoint="https://bugbeacon.ai" />
 </template>
 ```
 
@@ -221,10 +222,10 @@ For Vue, extend `GlobalComponents` or rely on `isCustomElement`.
 
 On the **host page** CSP:
 
-| Directive | Allow |
-| --- | --- |
+| Directive    | Allow                                                                                                       |
+| ------------ | ----------------------------------------------------------------------------------------------------------- |
 | `script-src` | `https://bugbeacon.ai` when using the hosted widget script (or your origin if you self-host `bugbeacon.js`) |
-| `frame-src` | The configured `endpoint` origin (for example `https://bugbeacon.ai`) |
+| `frame-src`  | The configured `endpoint` origin (for example `https://bugbeacon.ai`)                                       |
 
 The iframe loads BugBeacon’s embed document and form; challenge and API requests run inside that document’s origin. The parent widget only uses `postMessage` with the configured `endpoint` origin (`bugbeacon:ready`, `bugbeacon:init`, `bugbeacon:close`, protocol `version: 1`).
 
@@ -269,24 +270,24 @@ Open `http://localhost:4100/examples/` and allow `http://localhost:4100` in BugB
 
 ## Troubleshooting
 
-| Symptom | Likely cause | Fix |
-| --- | --- | --- |
-| Button disabled; “Bug reporting is unavailable…” | Invalid `project-id` or `endpoint` | Use a version-4 UUID and a bare origin (`https://bugbeacon.ai`). No path, query, or credentials. |
-| Button disabled on local HTTP | Non-loopback host or HTTPS mismatch | Use loopback for both host and `endpoint`, or use HTTPS in production. |
-| Embed loads but submission fails or is rejected | Origin not allowlisted | Add the exact `window.location.origin` in BugBeacon application settings. |
-| Works on `localhost` but not `127.0.0.1` (or vice versa) | Origin mismatch | Allow the origin you actually use; they are not interchangeable. |
-| Blank or blocked iframe | CSP `frame-src` | Allow the `endpoint` origin. |
-| Script does not load | CSP `script-src` | Allow `https://bugbeacon.ai` (or your self-hosted script origin). |
-| Custom element unknown / no button | npm without registration | Call `defineBugBeacon()` in the browser before rendering `<bug-beacon>`. |
-| Nothing reaches GitHub | GitHub token or project connection | Reconnect the project or replace the token in the BugBeacon dashboard (human-only). Revoke old tokens in GitHub when rotating. |
+| Symptom                                                  | Likely cause                        | Fix                                                                                                                            |
+| -------------------------------------------------------- | ----------------------------------- | ------------------------------------------------------------------------------------------------------------------------------ |
+| Button disabled; “Bug reporting is unavailable…”         | Invalid `project-id` or `endpoint`  | Use a version-4 UUID and a bare origin (`https://bugbeacon.ai`). No path, query, or credentials.                               |
+| Button disabled on local HTTP                            | Non-loopback host or HTTPS mismatch | Use loopback for both host and `endpoint`, or use HTTPS in production.                                                         |
+| Embed loads but submission fails or is rejected          | Origin not allowlisted              | Add the exact `window.location.origin` in BugBeacon application settings.                                                      |
+| Works on `localhost` but not `127.0.0.1` (or vice versa) | Origin mismatch                     | Allow the origin you actually use; they are not interchangeable.                                                               |
+| Blank or blocked iframe                                  | CSP `frame-src`                     | Allow the `endpoint` origin.                                                                                                   |
+| Script does not load                                     | CSP `script-src`                    | Allow `https://bugbeacon.ai` (or your self-hosted script origin).                                                              |
+| Custom element unknown / no button                       | npm without registration            | Call `defineBugBeacon()` in the browser before rendering `<bug-beacon>`.                                                       |
+| Nothing reaches GitHub                                   | GitHub token or project connection  | Reconnect the project or replace the token in the BugBeacon dashboard (human-only). Revoke old tokens in GitHub when rotating. |
 
 ## API surface (this package)
 
-| Export / global | Behavior |
-| --- | --- |
-| `defineBugBeacon()` from `@bugbeacon/browser` | Registers `<bug-beacon>` when `window.customElements` exists. |
-| `window.BugBeacon.defineBugBeacon()` | Same; available after loading `widget/v1.js` or `dist/bugbeacon.js`. |
-| `<bug-beacon project-id endpoint>` | UI and iframe lifecycle; see attributes above. |
+| Export / global                               | Behavior                                                             |
+| --------------------------------------------- | -------------------------------------------------------------------- |
+| `defineBugBeacon()` from `@bugbeacon/browser` | Registers `<bug-beacon>` when `window.customElements` exists.        |
+| `window.BugBeacon.defineBugBeacon()`          | Same; available after loading `widget/v1.js` or `dist/bugbeacon.js`. |
+| `<bug-beacon project-id endpoint>`            | UI and iframe lifecycle; see attributes above.                       |
 
 Hosted script URL (production): `https://bugbeacon.ai/widget/v1.js` (built from `dist/bugbeacon.js` in this repository).
 
