@@ -87,10 +87,7 @@ function defineBugBeacon() {
       }
     }
     configure() {
-      this.origin = endpointOrigin(
-        this.getAttribute("endpoint") ?? "",
-        window.location
-      );
+      this.origin = endpointOrigin(this.getAttribute("endpoint") ?? "", window.location);
       const valid = this.origin !== null && projectIdPattern.test(this.getAttribute("project-id") ?? "");
       this.trigger.disabled = !valid;
       this.status.textContent = valid ? "" : "Bug reporting is unavailable. Check the widget configuration.";
@@ -120,10 +117,7 @@ function defineBugBeacon() {
       const message = data;
       if (Object.keys(message).length !== 2 || message.version !== 1) return;
       if (message.type === "bugbeacon:ready") {
-        this.iframe.contentWindow?.postMessage(
-          { type: "bugbeacon:init", version: 1 },
-          this.origin
-        );
+        this.iframe.contentWindow?.postMessage({ type: "bugbeacon:init", version: 1 }, this.origin);
       } else if (message.type === "bugbeacon:close") {
         this.close();
       }
@@ -137,8 +131,7 @@ function defineBugBeacon() {
         event.preventDefault();
         const iframe = this.iframe;
         window.requestAnimationFrame(() => {
-          if (this.dialog.open && this.iframe === iframe)
-            iframe.contentWindow?.focus();
+          if (this.dialog.open && this.iframe === iframe) iframe.contentWindow?.focus();
         });
       }
     };
@@ -146,8 +139,7 @@ function defineBugBeacon() {
       const wasOpen = this.dialog.open;
       if (wasOpen) this.dialog.close();
       this.releaseFrame();
-      if (wasOpen && this.isConnected && !this.trigger.disabled)
-        this.trigger.focus();
+      if (wasOpen && this.isConnected && !this.trigger.disabled) this.trigger.focus();
     };
     afterClose = () => {
       if (!this.dialog.open) this.releaseFrame();

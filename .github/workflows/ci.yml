@@ -18,7 +18,10 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npx playwright install --with-deps chromium firefox webkit
-      - run: npm run check
+      - run: npm run format:check
+      - run: npm run lint
+      - run: npm run typecheck
+      - run: npm test
       - run: git diff --exit-code -- dist
       - run: npm audit
       - run: npm pack --dry-run
