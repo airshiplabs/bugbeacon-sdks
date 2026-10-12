@@ -133,9 +133,7 @@ export function ReportBug() {
   return (
     <bug-beacon
       project-id={projectId}
-      endpoint={
-        import.meta.env.VITE_BUGBEACON_ENDPOINT ?? "https://bugbeacon.ai"
-      }
+      endpoint={import.meta.env.VITE_BUGBEACON_ENDPOINT ?? "https://bugbeacon.ai"}
     />
   );
 }
@@ -159,9 +157,7 @@ export function BugBeaconWidget() {
   return (
     <bug-beacon
       project-id={process.env.NEXT_PUBLIC_BUGBEACON_PROJECT_ID!}
-      endpoint={
-        process.env.NEXT_PUBLIC_BUGBEACON_ENDPOINT ?? "https://bugbeacon.ai"
-      }
+      endpoint={process.env.NEXT_PUBLIC_BUGBEACON_ENDPOINT ?? "https://bugbeacon.ai"}
     />
   );
 }

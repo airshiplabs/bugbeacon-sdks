@@ -1,21 +1,13 @@
-const projectIdPattern =
-  /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+const projectIdPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
 function isLoopback(hostname: string): boolean {
-  return (
-    hostname === "localhost" ||
-    hostname === "[::1]" ||
-    /^127\.\d+\.\d+\.\d+$/.test(hostname)
-  );
+  return hostname === "localhost" || hostname === "[::1]" || /^127\.\d+\.\d+\.\d+$/.test(hostname);
 }
 
 function endpointOrigin(value: string, host: Location): string | null {
   try {
     const url = new URL(value);
-    const local =
-      url.protocol === "http:" &&
-      isLoopback(url.hostname) &&
-      isLoopback(host.hostname);
+    const local = url.protocol === "http:" && isLoopback(url.hostname) && isLoopback(host.hostname);
     if (
       (url.protocol !== "https:" && !local) ||
       url.username ||
@@ -115,13 +107,9 @@ export function defineBugBeacon(): void {
     }
 
     private configure(): void {
-      this.origin = endpointOrigin(
-        this.getAttribute("endpoint") ?? "",
-        window.location,
-      );
+      this.origin = endpointOrigin(this.getAttribute("endpoint") ?? "", window.location);
       const valid =
-        this.origin !== null &&
-        projectIdPattern.test(this.getAttribute("project-id") ?? "");
+        this.origin !== null && projectIdPattern.test(this.getAttribute("project-id") ?? "");
       this.trigger.disabled = !valid;
       this.status.textContent = valid
         ? ""
@@ -159,10 +147,7 @@ export function defineBugBeacon(): void {
       const message = data as Record<string, unknown>;
       if (Object.keys(message).length !== 2 || message.version !== 1) return;
       if (message.type === "bugbeacon:ready") {
-        this.iframe.contentWindow?.postMessage(
-          { type: "bugbeacon:init", version: 1 },
-          this.origin,
-        );
+        this.iframe.contentWindow?.postMessage({ type: "bugbeacon:init", version: 1 }, this.origin);
       } else if (message.type === "bugbeacon:close") {
         this.close();
       }
@@ -179,8 +164,7 @@ export function defineBugBeacon(): void {
         const iframe = this.iframe;
         // Firefox ignores cross-frame focus changes during Tab keydown.
         window.requestAnimationFrame(() => {
-          if (this.dialog.open && this.iframe === iframe)
-            iframe.contentWindow?.focus();
+          if (this.dialog.open && this.iframe === iframe) iframe.contentWindow?.focus();
         });
       }
     };
@@ -189,8 +173,7 @@ export function defineBugBeacon(): void {
       const wasOpen = this.dialog.open;
       if (wasOpen) this.dialog.close();
       this.releaseFrame();
-      if (wasOpen && this.isConnected && !this.trigger.disabled)
-        this.trigger.focus();
+      if (wasOpen && this.isConnected && !this.trigger.disabled) this.trigger.focus();
     };
 
     private afterClose = (): void => {

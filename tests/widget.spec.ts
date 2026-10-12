@@ -4,10 +4,7 @@ import { readFile } from "node:fs/promises";
 const projectId = "8ad69ca1-395f-4eca-8f64-c84225f00111";
 const serviceOrigin = "https://service.example";
 const hostOrigin = "https://host.example";
-const bundle = await readFile(
-  new URL("../dist/bugbeacon.js", import.meta.url),
-  "utf8",
-);
+const bundle = await readFile(new URL("../dist/bugbeacon.js", import.meta.url), "utf8");
 
 async function mount(
   page: Page,
@@ -17,9 +14,7 @@ async function mount(
   const endpoint = options.endpoint ?? serviceOrigin;
   const messages: unknown[] = [];
   const requests: { url: string; referer?: string }[] = [];
-  await page.exposeFunction("recordMessage", (data: unknown) =>
-    messages.push(data),
-  );
+  await page.exposeFunction("recordMessage", (data: unknown) => messages.push(data));
   await page.route("**/*", async (route) => {
     const request = route.request();
     const url = new URL(request.url());
@@ -69,9 +64,7 @@ test("plain script registers once and embeds only the project and parent origin"
     BugBeacon.defineBugBeacon();
     BugBeacon.defineBugBeacon();
   });
-  await expect(
-    page.getByRole("button", { name: "Report Bug", exact: true }),
-  ).toHaveCount(1);
+  await expect(page.getByRole("button", { name: "Report Bug", exact: true })).toHaveCount(1);
   expect(requests).toHaveLength(0);
   await page.getByRole("button", { name: "Report Bug", exact: true }).click();
   await expect(page.frameLocator("iframe").locator("body")).toHaveAttribute(
@@ -88,16 +81,12 @@ test("plain script registers once and embeds only the project and parent origin"
   await expect(page.locator("iframe")).toHaveAttribute("title", "Report a bug");
 });
 
-test("Close, Escape, and reporter closure restore keyboard focus", async ({
-  page,
-}) => {
+test("Close, Escape, and reporter closure restore keyboard focus", async ({ page }) => {
   await mount(page);
   const trigger = page.getByRole("button", { name: "Report Bug", exact: true });
   const dialog = page.getByRole("dialog");
   await trigger.click();
-  await expect(
-    page.getByRole("button", { name: "Close", exact: true }),
-  ).toBeFocused();
+  await expect(page.getByRole("button", { name: "Close", exact: true })).toBeFocused();
   await page.keyboard.press("Escape");
   await expect(dialog).not.toBeVisible();
   await expect(trigger).toBeFocused();
@@ -105,10 +94,7 @@ test("Close, Escape, and reporter closure restore keyboard focus", async ({
   await page.getByRole("button", { name: "Close", exact: true }).click();
   await expect(trigger).toBeFocused();
   await trigger.click();
-  await page
-    .frameLocator("iframe")
-    .getByRole("button", { name: "Done", exact: true })
-    .click();
+  await page.frameLocator("iframe").getByRole("button", { name: "Done", exact: true }).click();
   await expect(dialog).not.toBeVisible();
   await expect(trigger).toBeFocused();
 });
@@ -150,10 +136,7 @@ test("forged source, origin, protocol, and extra fields cannot close the dialog"
     }
   }, serviceOrigin);
   await expect(page.getByRole("dialog")).toBeVisible();
-  await page
-    .frameLocator("iframe")
-    .getByRole("button", { name: "Done", exact: true })
-    .click();
+  await page.frameLocator("iframe").getByRole("button", { name: "Done", exact: true }).click();
   await expect(page.getByRole("dialog")).not.toBeVisible();
 });
 
@@ -180,29 +163,18 @@ test("removal and reinsertion release the modal and retain one working listener"
   expect(messages).toHaveLength(2);
 });
 
-test("multiple widgets accept messages only from their own frames", async ({
-  page,
-}) => {
+test("multiple widgets accept messages only from their own frames", async ({ page }) => {
   await mount(page, { count: 2 });
-  await page
-    .getByRole("button", { name: "Report Bug", exact: true })
-    .nth(1)
-    .click();
-  await expect(
-    page.locator("bug-beacon").nth(0).locator("dialog"),
-  ).not.toBeVisible();
-  await expect(
-    page.locator("bug-beacon").nth(1).locator("dialog"),
-  ).toBeVisible();
+  await page.getByRole("button", { name: "Report Bug", exact: true }).nth(1).click();
+  await expect(page.locator("bug-beacon").nth(0).locator("dialog")).not.toBeVisible();
+  await expect(page.locator("bug-beacon").nth(1).locator("dialog")).toBeVisible();
   await page
     .locator("bug-beacon")
     .nth(1)
     .frameLocator("iframe")
     .getByRole("button", { name: "Done", exact: true })
     .click();
-  await expect(
-    page.getByRole("button", { name: "Report Bug", exact: true }).nth(1),
-  ).toBeFocused();
+  await expect(page.getByRole("button", { name: "Report Bug", exact: true }).nth(1)).toBeFocused();
 });
 
 for (const endpoint of [
@@ -216,17 +188,13 @@ for (const endpoint of [
 ]) {
   test(`rejects invalid endpoint ${endpoint}`, async ({ page }) => {
     const { requests } = await mount(page, { endpoint });
-    await expect(
-      page.getByRole("button", { name: "Report Bug", exact: true }),
-    ).toBeDisabled();
+    await expect(page.getByRole("button", { name: "Report Bug", exact: true })).toBeDisabled();
     await expect(page.getByRole("status")).toContainText("unavailable");
     expect(requests).toHaveLength(0);
   });
 }
 
-test("loopback development allows a loopback HTTP service", async ({
-  page,
-}) => {
+test("loopback development allows a loopback HTTP service", async ({ page }) => {
   const { requests } = await mount(page, {
     host: "http://localhost:4100",
     endpoint: "http://127.0.0.1:4200",
@@ -241,31 +209,23 @@ test("loopback development allows a loopback HTTP service", async ({
   );
 });
 
-test("invalid project IDs never navigate and attribute corrections recover", async ({
-  page,
-}) => {
+test("invalid project IDs never navigate and attribute corrections recover", async ({ page }) => {
   await mount(page);
   await page
     .locator("bug-beacon")
     .evaluate((widget) => widget.setAttribute("project-id", "../../admin"));
-  await expect(
-    page.getByRole("button", { name: "Report Bug", exact: true }),
-  ).toBeDisabled();
+  await expect(page.getByRole("button", { name: "Report Bug", exact: true })).toBeDisabled();
   await page
     .locator("bug-beacon")
     .evaluate((widget, id) => widget.setAttribute("project-id", id), projectId);
-  await expect(
-    page.getByRole("button", { name: "Report Bug", exact: true }),
-  ).toBeEnabled();
+  await expect(page.getByRole("button", { name: "Report Bug", exact: true })).toBeEnabled();
 });
 
 test("keyboard focus stays within the dialog and Escape works from the iframe", async ({
   page,
 }) => {
   await mount(page);
-  await expect(
-    page.getByRole("button", { name: "Report Bug", exact: true }),
-  ).not.toBeFocused();
+  await expect(page.getByRole("button", { name: "Report Bug", exact: true })).not.toBeFocused();
   await page.getByRole("button", { name: "Report Bug", exact: true }).click();
   await expect(page.frameLocator("iframe").locator("body")).toHaveAttribute(
     "data-initialized",
@@ -279,9 +239,7 @@ test("keyboard focus stays within the dialog and Escape works from the iframe", 
       await page
         .locator("bug-beacon")
         .evaluate((widget) =>
-          document.activeElement === widget
-            ? widget.shadowRoot!.activeElement!.tagName
-            : "outside",
+          document.activeElement === widget ? widget.shadowRoot!.activeElement!.tagName : "outside",
         ),
     );
     inputStates.push(
@@ -300,9 +258,7 @@ test("keyboard focus stays within the dialog and Escape works from the iframe", 
   await expect(page.locator("iframe")).toBeFocused();
   await page.keyboard.press("Escape");
   await expect(page.getByRole("dialog")).not.toBeVisible();
-  await expect(
-    page.getByRole("button", { name: "Report Bug", exact: true }),
-  ).toBeFocused();
+  await expect(page.getByRole("button", { name: "Report Bug", exact: true })).toBeFocused();
 });
 
 test("configuration changes close the old form and reopen at the new endpoint", async ({
@@ -316,9 +272,7 @@ test("configuration changes close the old form and reopen at the new endpoint", 
   );
   await page
     .locator("bug-beacon")
-    .evaluate((widget) =>
-      widget.setAttribute("endpoint", "https://replacement.example"),
-    );
+    .evaluate((widget) => widget.setAttribute("endpoint", "https://replacement.example"));
   await expect(page.getByRole("dialog")).not.toBeVisible();
   await page.getByRole("button", { name: "Report Bug", exact: true }).click();
   await expect(page.frameLocator("iframe").locator("body")).toHaveAttribute(
@@ -328,20 +282,14 @@ test("configuration changes close the old form and reopen at the new endpoint", 
   expect(new URL(requests[1].url).origin).toBe("https://replacement.example");
 });
 
-test("mobile dialog keeps Close visible without horizontal overflow", async ({
-  page,
-}) => {
+test("mobile dialog keeps Close visible without horizontal overflow", async ({ page }) => {
   await page.setViewportSize({ width: 320, height: 568 });
   await mount(page);
   await page.getByRole("button", { name: "Report Bug", exact: true }).click();
-  const close = await page
-    .getByRole("button", { name: "Close", exact: true })
-    .boundingBox();
+  const close = await page.getByRole("button", { name: "Close", exact: true }).boundingBox();
   expect(close).not.toBeNull();
   expect(close!.x).toBeGreaterThanOrEqual(0);
   expect(close!.x + close!.width).toBeLessThanOrEqual(320);
   expect(close!.y + close!.height).toBeLessThanOrEqual(568);
-  expect(
-    await page.evaluate(() => document.documentElement.scrollWidth),
-  ).toBeLessThanOrEqual(320);
+  expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(320);
 });
