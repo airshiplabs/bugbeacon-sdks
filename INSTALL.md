@@ -57,12 +57,13 @@ With npm 12, add `--allow-git=root` for a direct Git dependency. Use the same `d
 
 ## Configuration attributes
 
-The element observes only these attributes (see `src/index.ts`):
+The element observes these attributes (see `src/index.ts`):
 
 | Attribute    | Required | Value                                                                         |
 | ------------ | -------- | ----------------------------------------------------------------------------- |
 | `project-id` | Yes      | Public application UUID (RFC 4122 version 4). Invalid IDs disable the button. |
 | `endpoint`   | Yes      | BugBeacon service origin. Production: `https://bugbeacon.ai`.                 |
+| `metadata`   | No       | Optional JSON object of app context (see **Metadata** below).                 |
 
 **`endpoint` rules:**
 
@@ -71,7 +72,36 @@ The element observes only these attributes (see `src/index.ts`):
 - **HTTP** only for loopback development when **both** the BugBeacon service and the host page use loopback hostnames (`localhost`, `127.*`, or `::1`).
 - Invalid `project-id` or `endpoint` disables the button and shows: _Bug reporting is unavailable. Check the widget configuration._
 
-There are no other element attributes, properties, or slots in this SDK.
+### Metadata (property and attribute)
+
+Pass optional app context so reports include version, plan, user id, or similar. The hosted form shows these values to the reporter before submit; they are stored with the report. **Never put passwords, tokens, or other secrets in metadata.**
+
+| Rule       | Limit                                                                                            |
+| ---------- | ------------------------------------------------------------------------------------------------ |
+| Shape      | Flat object; values are strings, numbers, or booleans only (no nested objects, arrays, or null). |
+| Keys       | Up to 20; each key name up to 40 characters.                                                     |
+| Values     | String values up to 200 characters.                                                              |
+| Total size | About 4 KB (4,096 bytes as JSON); extra keys are dropped in order.                               |
+
+Invalid keys are dropped in the browser with a `console.warn` that names the key only (never the value). The service applies the same rules.
+
+**How to set metadata**
+
+- **JavaScript property** (preferred; can change at runtime, for example after sign-in):
+
+  ```js
+  document.querySelector("bug-beacon").metadata = {
+    version: "2.4.1",
+    plan: "pro",
+    userId: "u_123",
+  };
+  ```
+
+- **React 19** (and similar): `metadata={{ version, plan, userId }}` on `<bug-beacon>` sets the same property.
+
+- **HTML attribute**: `metadata='{"version":"2.4.1"}'`. If both property and attribute are set, **the property wins**.
+
+Changing `metadata` does not close an open form; the new value is sent the next time the form opens.
 
 **Embed URL (when the button opens):**
 
@@ -79,7 +109,7 @@ There are no other element attributes, properties, or slots in this SDK.
 {endpoint}/embed/{project-id}?origin={encodeURIComponent(window.location.origin)}
 ```
 
-The widget sends only the public project ID and the parent page’s `window.location.origin` (not path, query, or hash). It does not attach application version or environment name; those are not part of this browser SDK.
+The embed query still sends only the public project ID and the parent page’s `window.location.origin`. When the form is ready, the widget sends a `bugbeacon:init` message (version 2) with `context.pageUrl` (origin and path, no query or hash), `context.viewport` (window size), and optional `context.metadata`.
 
 ### Environment variables (host app conventions)
 
@@ -136,6 +166,7 @@ export function ReportBug() {
       endpoint={
         import.meta.env.VITE_BUGBEACON_ENDPOINT ?? "https://bugbeacon.ai"
       }
+      metadata={{ version: import.meta.env.VITE_APP_VERSION }}
     />
   );
 }
@@ -208,6 +239,7 @@ declare global {
         React.HTMLAttributes<HTMLElement> & {
           "project-id": string;
           endpoint?: string;
+          metadata?: Record<string, string | number | boolean>;
         },
         HTMLElement
       >;
@@ -227,7 +259,7 @@ On the **host page** CSP:
 | `script-src` | `https://bugbeacon.ai` when using the hosted widget script (or your origin if you self-host `bugbeacon.js`) |
 | `frame-src`  | The configured `endpoint` origin (for example `https://bugbeacon.ai`)                                       |
 
-The iframe loads BugBeacon’s embed document and form; challenge and API requests run inside that document’s origin. The parent widget only uses `postMessage` with the configured `endpoint` origin (`bugbeacon:ready`, `bugbeacon:init`, `bugbeacon:close`, protocol `version: 1`).
+The iframe loads BugBeacon’s embed document and form; challenge and API requests run inside that document’s origin. The parent widget only uses `postMessage` with the configured `endpoint` origin (`bugbeacon:ready`, `bugbeacon:init`, `bugbeacon:close`). Init uses **version 2** with a `context` object when page URL and viewport are available; older hosts may still see version 1 with no context.
 
 ## GitHub and BugBeacon setup
 

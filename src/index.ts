@@ -1,3 +1,13 @@
+import { buildInitContext } from "./context.js";
+import {
+  type BugBeaconMetadata,
+  parseMetadataAttribute,
+  sanitizeMetadata,
+} from "./metadata.js";
+
+export type { BugBeaconInitContext } from "./context.js";
+export type { BugBeaconMetadata, BugBeaconMetadataValue } from "./metadata.js";
+
 const projectIdPattern =
   /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
@@ -71,13 +81,15 @@ export function defineBugBeacon(): void {
     return;
 
   class BugBeaconElement extends HTMLElement {
-    static observedAttributes = ["project-id", "endpoint"];
+    static observedAttributes = ["project-id", "endpoint", "metadata"];
     private readonly trigger: HTMLButtonElement;
     private readonly dialog: HTMLDialogElement;
     private readonly closeButton: HTMLButtonElement;
     private readonly status: HTMLParagraphElement;
     private iframe: HTMLIFrameElement | null = null;
     private origin: string | null = null;
+    private metadataFromProperty = false;
+    private metadataProperty: BugBeaconMetadata | undefined;
 
     constructor() {
       super();
@@ -107,11 +119,26 @@ export function defineBugBeacon(): void {
       this.dialog.removeEventListener("close", this.afterClose);
     }
 
-    attributeChangedCallback(): void {
-      if (this.isConnected) {
-        this.close();
-        this.configure();
-      }
+    get metadata(): BugBeaconMetadata | undefined {
+      return this.metadataProperty;
+    }
+
+    set metadata(value: BugBeaconMetadata | undefined) {
+      this.metadataFromProperty = true;
+      this.metadataProperty =
+        value === undefined ? undefined : sanitizeMetadata(value);
+    }
+
+    attributeChangedCallback(name: string): void {
+      if (!this.isConnected) return;
+      if (name === "metadata") return;
+      this.close();
+      this.configure();
+    }
+
+    private resolvedMetadata(): BugBeaconMetadata | undefined {
+      if (this.metadataFromProperty) return this.metadataProperty;
+      return parseMetadataAttribute(this.getAttribute("metadata"));
     }
 
     private configure(): void {
@@ -159,8 +186,11 @@ export function defineBugBeacon(): void {
       const message = data as Record<string, unknown>;
       if (Object.keys(message).length !== 2 || message.version !== 1) return;
       if (message.type === "bugbeacon:ready") {
+        const context = buildInitContext(window, this.resolvedMetadata());
         this.iframe.contentWindow?.postMessage(
-          { type: "bugbeacon:init", version: 1 },
+          context
+            ? { type: "bugbeacon:init", version: 2, context }
+            : { type: "bugbeacon:init", version: 1 },
           this.origin,
         );
       } else if (message.type === "bugbeacon:close") {

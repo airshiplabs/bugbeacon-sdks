@@ -39,3 +39,23 @@ npm run check
 ```
 
 See [INSTALL.md](INSTALL.md) for embedding the widget in a host application.
+
+## Widget configuration
+
+| Name         | Kind                  | Required | Description                                                                                                                                                                              |
+| ------------ | --------------------- | -------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `project-id` | attribute             | Yes      | Public BugBeacon application UUID.                                                                                                                                                       |
+| `endpoint`   | attribute             | Yes      | BugBeacon service origin (for example `https://bugbeacon.ai`).                                                                                                                           |
+| `metadata`   | attribute or property | No       | Optional flat JSON of app context (version, plan, user id). Shown to reporters and sent with the report; never include secrets. Up to 20 keys, 4 KB total. Property overrides attribute. |
+
+Example: `metadata='{"version":"2.4.1","plan":"pro"}'` or `element.metadata = { version: "2.4.1" }`.
+
+## Browser behavior and privacy
+
+The widget does not read host page contents, cookies, storage, or the full URL. When the hosted form opens, it may receive:
+
+- **Page URL** — `origin` + `pathname` only (query string and hash are stripped before send).
+- **Viewport** — host window size (for example `1440x900`).
+- **Metadata** — only what your app sets on `<bug-beacon>`.
+
+Reporters see these values in the form and can turn them off before submit. See [INSTALL.md](INSTALL.md) for limits and framework examples.

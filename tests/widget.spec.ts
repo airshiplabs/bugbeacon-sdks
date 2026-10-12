@@ -84,7 +84,16 @@ test("plain script registers once and embeds only the project and parent origin"
       referer: undefined,
     },
   ]);
-  expect(messages).toEqual([{ type: "bugbeacon:init", version: 1 }]);
+  expect(messages).toEqual([
+    {
+      type: "bugbeacon:init",
+      version: 2,
+      context: {
+        pageUrl: `${hostOrigin}/private/path`,
+        viewport: expect.stringMatching(/^\d+x\d+$/),
+      },
+    },
+  ]);
   await expect(page.locator("iframe")).toHaveAttribute("title", "Report a bug");
 });
 
@@ -326,6 +335,116 @@ test("configuration changes close the old form and reopen at the new endpoint", 
     "true",
   );
   expect(new URL(requests[1].url).origin).toBe("https://replacement.example");
+});
+
+test("init v2 includes sanitized metadata from property and attribute", async ({
+  page,
+}) => {
+  const { messages } = await mount(page);
+  await page.locator("bug-beacon").evaluate((widget) => {
+    (widget as HTMLElement & { metadata: unknown }).metadata = {
+      version: "2.4.1",
+      plan: "pro",
+      userId: "u_123",
+    };
+  });
+  await page.getByRole("button", { name: "Report Bug", exact: true }).click();
+  await expect(page.frameLocator("iframe").locator("body")).toHaveAttribute(
+    "data-initialized",
+    "true",
+  );
+  expect(messages[0]).toMatchObject({
+    type: "bugbeacon:init",
+    version: 2,
+    context: {
+      pageUrl: `${hostOrigin}/private/path`,
+      metadata: { version: "2.4.1", plan: "pro", userId: "u_123" },
+    },
+  });
+});
+
+test("metadata property wins over the metadata attribute", async ({ page }) => {
+  const { messages } = await mount(page);
+  await page.locator("bug-beacon").evaluate((widget) => {
+    widget.setAttribute("metadata", JSON.stringify({ winner: "attribute" }));
+    (widget as HTMLElement & { metadata: unknown }).metadata = {
+      winner: "property",
+    };
+  });
+  await page.getByRole("button", { name: "Report Bug", exact: true }).click();
+  await expect(page.frameLocator("iframe").locator("body")).toHaveAttribute(
+    "data-initialized",
+    "true",
+  );
+  expect(messages[0]).toMatchObject({
+    context: { metadata: { winner: "property" } },
+  });
+});
+
+test("changing metadata at runtime applies on the next form open", async ({
+  page,
+}) => {
+  const { messages } = await mount(page);
+  const widget = page.locator("bug-beacon");
+  await widget.evaluate((el) => {
+    (el as HTMLElement & { metadata: unknown }).metadata = { pass: "first" };
+  });
+  await page.getByRole("button", { name: "Report Bug", exact: true }).click();
+  await page.getByRole("button", { name: "Close", exact: true }).click();
+  await expect(page.getByRole("dialog")).not.toBeVisible();
+  await widget.evaluate((el) => {
+    (el as HTMLElement & { metadata: unknown }).metadata = { pass: "second" };
+  });
+  await page.getByRole("button", { name: "Report Bug", exact: true }).click();
+  await expect(page.frameLocator("iframe").locator("body")).toHaveAttribute(
+    "data-initialized",
+    "true",
+  );
+  expect(messages).toHaveLength(2);
+  expect(messages[1]).toMatchObject({
+    context: { metadata: { pass: "second" } },
+  });
+});
+
+test("metadata attribute changes do not close an open form", async ({
+  page,
+}) => {
+  await mount(page);
+  await page.getByRole("button", { name: "Report Bug", exact: true }).click();
+  await expect(page.getByRole("dialog")).toBeVisible();
+  await page
+    .locator("bug-beacon")
+    .evaluate((widget) =>
+      widget.setAttribute("metadata", JSON.stringify({ version: "1.0.0" })),
+    );
+  await expect(page.getByRole("dialog")).toBeVisible();
+});
+
+test("invalid metadata fields are dropped with a console warning", async ({
+  page,
+}) => {
+  const warnings: string[] = [];
+  page.on("console", (message) => {
+    if (message.type() === "warning") warnings.push(message.text());
+  });
+  const { messages } = await mount(page);
+  await page.locator("bug-beacon").evaluate((widget) => {
+    (widget as HTMLElement & { metadata: unknown }).metadata = {
+      good: "ok",
+      badNested: { nope: true },
+    };
+  });
+  await page.getByRole("button", { name: "Report Bug", exact: true }).click();
+  await expect(page.frameLocator("iframe").locator("body")).toHaveAttribute(
+    "data-initialized",
+    "true",
+  );
+  expect(messages[0]).toMatchObject({
+    context: { metadata: { good: "ok" } },
+  });
+  expect(
+    warnings.some((text) => text.includes('dropped metadata key "badNested"')),
+  ).toBe(true);
 });
 
 test("mobile dialog keeps Close visible without horizontal overflow", async ({

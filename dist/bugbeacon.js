@@ -1,4 +1,4 @@
-/*! @bugbeacon/browser v0.1.0 | MIT License | https://github.com/airshiplabs/bugbeacon-sdks */
+/*! @bugbeacon/browser v0.2.0 | MIT License | https://github.com/airshiplabs/bugbeacon-sdks */
 "use strict";
 var BugBeacon = (() => {
   var __defProp = Object.defineProperty;
@@ -24,6 +24,89 @@ var BugBeacon = (() => {
   __export(browser_exports, {
     defineBugBeacon: () => defineBugBeacon
   });
+
+  // src/context.ts
+  var MAX_PAGE_URL_LENGTH = 2048;
+  var MIN_VIEWPORT = 1;
+  var MAX_VIEWPORT = 1e4;
+  function buildPageUrl(location) {
+    if (location.origin === "null") return void 0;
+    const pageUrl = `${location.origin}${location.pathname}`;
+    if (pageUrl.length > MAX_PAGE_URL_LENGTH) return void 0;
+    return pageUrl;
+  }
+  function buildViewport(window2) {
+    const width = Math.round(window2.innerWidth);
+    const height = Math.round(window2.innerHeight);
+    if (!Number.isFinite(width) || !Number.isFinite(height) || width < MIN_VIEWPORT || width > MAX_VIEWPORT || height < MIN_VIEWPORT || height > MAX_VIEWPORT) {
+      return void 0;
+    }
+    return `${width}x${height}`;
+  }
+  function buildInitContext(window2, metadata) {
+    const pageUrl = buildPageUrl(window2.location);
+    const viewport = buildViewport(window2);
+    if (!pageUrl || !viewport) return void 0;
+    const context = { pageUrl, viewport };
+    if (metadata) context.metadata = metadata;
+    return context;
+  }
+
+  // src/metadata.ts
+  var MAX_METADATA_KEYS = 20;
+  var MAX_KEY_LENGTH = 40;
+  var MAX_VALUE_LENGTH = 200;
+  var MAX_METADATA_BYTES = 4096;
+  function warnDropped(key, reason) {
+    console.warn(`BugBeacon: dropped metadata key "${key}" because ${reason}.`);
+  }
+  function isPlainMetadataObject(value) {
+    return typeof value === "object" && value !== null && !Array.isArray(value) && Object.getPrototypeOf(value) === Object.prototype;
+  }
+  function sanitizeMetadata(input) {
+    if (input === void 0 || input === null) return void 0;
+    if (!isPlainMetadataObject(input)) {
+      console.warn(
+        "BugBeacon: metadata must be a flat object; ignoring the value."
+      );
+      return void 0;
+    }
+    const result = {};
+    for (const [key, value] of Object.entries(input)) {
+      if (Object.keys(result).length >= MAX_METADATA_KEYS) {
+        warnDropped(key, "only 20 keys are allowed");
+        continue;
+      }
+      if (key.length > MAX_KEY_LENGTH) {
+        warnDropped(key, "key names must be 40 characters or fewer");
+        continue;
+      }
+      if (typeof value !== "string" && typeof value !== "number" && typeof value !== "boolean") {
+        warnDropped(key, "values must be strings, numbers, or booleans");
+        continue;
+      }
+      if (typeof value === "string" && value.length > MAX_VALUE_LENGTH) {
+        warnDropped(key, "string values must be 200 characters or fewer");
+        continue;
+      }
+      const candidate = { ...result, [key]: value };
+      if (JSON.stringify(candidate).length > MAX_METADATA_BYTES) {
+        warnDropped(key, "metadata must fit within 4096 bytes as JSON");
+        continue;
+      }
+      result[key] = value;
+    }
+    return Object.keys(result).length > 0 ? result : void 0;
+  }
+  function parseMetadataAttribute(raw) {
+    if (!raw) return void 0;
+    try {
+      return sanitizeMetadata(JSON.parse(raw));
+    } catch {
+      console.warn("BugBeacon: metadata attribute must be valid JSON.");
+      return void 0;
+    }
+  }
 
   // src/index.ts
   var projectIdPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
@@ -73,13 +156,15 @@ var BugBeacon = (() => {
     if (typeof window === "undefined" || !window.customElements || window.customElements.get("bug-beacon"))
       return;
     class BugBeaconElement extends HTMLElement {
-      static observedAttributes = ["project-id", "endpoint"];
+      static observedAttributes = ["project-id", "endpoint", "metadata"];
       trigger;
       dialog;
       closeButton;
       status;
       iframe = null;
       origin = null;
+      metadataFromProperty = false;
+      metadataProperty;
       constructor() {
         super();
         const root = this.attachShadow({ mode: "open" });
@@ -105,11 +190,22 @@ var BugBeacon = (() => {
         this.dialog.removeEventListener("cancel", this.cancel);
         this.dialog.removeEventListener("close", this.afterClose);
       }
-      attributeChangedCallback() {
-        if (this.isConnected) {
-          this.close();
-          this.configure();
-        }
+      get metadata() {
+        return this.metadataProperty;
+      }
+      set metadata(value) {
+        this.metadataFromProperty = true;
+        this.metadataProperty = value === void 0 ? void 0 : sanitizeMetadata(value);
+      }
+      attributeChangedCallback(name) {
+        if (!this.isConnected) return;
+        if (name === "metadata") return;
+        this.close();
+        this.configure();
+      }
+      resolvedMetadata() {
+        if (this.metadataFromProperty) return this.metadataProperty;
+        return parseMetadataAttribute(this.getAttribute("metadata"));
       }
       configure() {
         this.origin = endpointOrigin(
@@ -145,8 +241,9 @@ var BugBeacon = (() => {
         const message = data;
         if (Object.keys(message).length !== 2 || message.version !== 1) return;
         if (message.type === "bugbeacon:ready") {
+          const context = buildInitContext(window, this.resolvedMetadata());
           this.iframe.contentWindow?.postMessage(
-            { type: "bugbeacon:init", version: 1 },
+            context ? { type: "bugbeacon:init", version: 2, context } : { type: "bugbeacon:init", version: 1 },
             this.origin
           );
         } else if (message.type === "bugbeacon:close") {

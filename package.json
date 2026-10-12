@@ -1,6 +1,6 @@
 {
   "name": "@bugbeacon/browser",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Browser SDK with an accessible Report Bug button for the BugBeacon hosted form.",
   "type": "module",
   "license": "MIT",
