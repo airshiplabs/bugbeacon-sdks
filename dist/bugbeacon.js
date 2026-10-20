@@ -25,10 +25,25 @@ var BugBeacon = (() => {
     defineBugBeacon: () => defineBugBeacon
   });
 
+  // src/endpoint.ts
+  function endpointOrigin(value, host) {
+    try {
+      const url = new URL(value);
+      const localhostHttp = url.protocol === "http:" && url.hostname === "localhost" && host.hostname === "localhost";
+      if (url.protocol !== "https:" && !localhostHttp || url.username || url.password || url.pathname !== "/" || url.search || url.hash || host.origin === "null")
+        return null;
+      return url.origin;
+    } catch {
+      return null;
+    }
+  }
+
   // src/protocol.ts
   var protocolVersion = 1;
   var messageSource = "bugbeacon";
+  var minFrameHeight = 100;
   var maxFrameHeight = 4096;
+  var labelMax = 60;
   var defaultTheme = {
     accent: "#365fe8",
     colorScheme: "light",
@@ -40,14 +55,13 @@ var BugBeacon = (() => {
     }
   };
   var accentPattern = /^#[0-9a-f]{6}$/i;
-  var labelMax = 60;
   function plainRecord(value) {
     if (!value || typeof value !== "object" || Array.isArray(value)) return null;
     if (Object.getPrototypeOf(value) !== Object.prototype) return null;
     return value;
   }
   function validHeight(value) {
-    return typeof value === "number" && Number.isInteger(value) && value >= 1 && value <= maxFrameHeight;
+    return typeof value === "number" && Number.isInteger(value) && value >= minFrameHeight && value <= maxFrameHeight;
   }
   function hasControlCharacter(value) {
     for (let index = 0; index < value.length; index += 1) {
@@ -81,7 +95,7 @@ var BugBeacon = (() => {
     return new URLSearchParams({ origin: parentOrigin, embed: "1" }).toString();
   }
   function embedUrl(serviceOrigin, projectId, parentOrigin) {
-    return `${serviceOrigin}/embed/${projectId}?${embedSearch(parentOrigin)}`;
+    return `${serviceOrigin}/embed/${encodeURIComponent(projectId)}?${embedSearch(parentOrigin)}`;
   }
   function legacyInitMessage() {
     return { type: "bugbeacon:init", version: 1 };
@@ -124,20 +138,6 @@ var BugBeacon = (() => {
   // src/index.ts
   var projectIdPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
   var submittedStatus = "Report submitted.";
-  function isLoopback(hostname) {
-    return hostname === "localhost" || hostname === "[::1]" || /^127\.\d+\.\d+\.\d+$/.test(hostname);
-  }
-  function endpointOrigin(value, host) {
-    try {
-      const url = new URL(value);
-      const local = url.protocol === "http:" && isLoopback(url.hostname) && isLoopback(host.hostname);
-      if (url.protocol !== "https:" && !local || url.username || url.password || url.pathname !== "/" || url.search || url.hash || host.origin === "null")
-        return null;
-      return url.origin;
-    } catch {
-      return null;
-    }
-  }
   var markup = `
   <style>
     :host {

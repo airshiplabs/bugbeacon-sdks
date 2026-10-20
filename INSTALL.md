@@ -67,8 +67,8 @@ The element observes only these attributes (see `src/index.ts`):
 **`endpoint` rules:**
 
 - Must be a valid origin: scheme + host + optional port only (`pathname` must be `/`, no `username`, `password`, `search`, or `hash`).
-- **HTTPS** in production.
-- **HTTP** only for loopback development when **both** the BugBeacon service and the host page use loopback hostnames (`localhost`, `127.*`, or `::1`).
+- **HTTPS** is required. The value is parsed with `new URL` and stored as `url.origin`.
+- **HTTP** is allowed only when the endpoint hostname and the host page hostname are both exactly `localhost`. `127.0.0.1` and `::1` are not accepted for HTTP.
 - Invalid `project-id` or `endpoint` disables the button and shows: _Bug reporting is unavailable. Check the widget configuration._
 
 Optional theme attributes (all fall back to BugBeacon defaults when missing or invalid):
@@ -87,10 +87,10 @@ There are no other element attributes, properties, or slots in this SDK. Theme v
 **Embed URL (when the button opens):**
 
 ```http
-{endpoint}/embed/{project-id}?origin={encodeURIComponent(window.location.origin)}&embed=1
+{endpoint}/embed/{encodeURIComponent(project-id)}?origin={encodeURIComponent(window.location.origin)}&embed=1
 ```
 
-The widget sends only the public project ID, the parent page’s `window.location.origin` (not path, query, or hash), and `embed=1`. `embed=1` plus the handshake message tells the hosted form to hide its own close button. A 0.1.0 embed without those signals stays in legacy mode. The widget does not attach application version or environment name.
+The widget sends only the public project ID (percent-encoded in the path), the parent page’s `window.location.origin` (not path, query, or hash), and `embed=1`. `embed=1` plus the handshake message tells the hosted form to hide its own close button. A 0.1.0 embed without those signals stays in legacy mode. The widget does not attach application version or environment name.
 
 ### Environment variables (host app conventions)
 
@@ -236,7 +236,7 @@ On the **host page** CSP:
 
 The iframe loads BugBeacon’s embed document and form; challenge and API requests run inside that document’s origin. The parent widget only uses `postMessage` with the configured `endpoint` origin.
 
-Protocol 1 messages are plain objects with exact keys. The form sends `ready`, `resize` (`height` integer 1–4096), `close-request`, and `submitted`. After `ready`, the SDK sends `handshake` (`embed: true`) and then `theme` (`accent`, `colorScheme`, `labels`). See [README](README.md) for the JSON shapes.
+Protocol 1 messages are plain objects with exact keys. The form sends `ready`, `resize` (`height` integer 100–4096), `close-request`, and `submitted`. An unknown `protocol` number is ignored, and legacy `version: 1` messages still work. See the README for that rule and for the optional `channel` id. After `ready`, the SDK sends `handshake` (`embed: true`) and then `theme` (`accent`, `colorScheme`, `labels`). See [README](README.md) for the JSON shapes.
 
 Legacy messages still work: form `bugbeacon:ready` (`version: 1`), SDK reply `bugbeacon:init` (`version: 1`), form `bugbeacon:close` (`version: 1`).
 
@@ -284,7 +284,7 @@ Open `http://localhost:4100/examples/` and allow `http://localhost:4100` in BugB
 | Symptom                                                  | Likely cause                        | Fix                                                                                                                            |
 | -------------------------------------------------------- | ----------------------------------- | ------------------------------------------------------------------------------------------------------------------------------ |
 | Button disabled; “Bug reporting is unavailable…”         | Invalid `project-id` or `endpoint`  | Use a version-4 UUID and a bare origin (`https://bugbeacon.ai`). No path, query, or credentials.                               |
-| Button disabled on local HTTP                            | Non-loopback host or HTTPS mismatch | Use loopback for both host and `endpoint`, or use HTTPS in production.                                                         |
+| Button disabled on local HTTP                            | Page or endpoint is not `localhost` | Use `http://localhost` for both, or use HTTPS. `127.0.0.1` is not an HTTP exception.                                           |
 | Embed loads but submission fails or is rejected          | Origin not allowlisted              | Add the exact `window.location.origin` in BugBeacon application settings.                                                      |
 | Works on `localhost` but not `127.0.0.1` (or vice versa) | Origin mismatch                     | Allow the origin you actually use; they are not interchangeable.                                                               |
 | Blank or blocked iframe                                  | CSP `frame-src`                     | Allow the `endpoint` origin.                                                                                                   |

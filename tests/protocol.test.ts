@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
 import { describe, it } from "node:test";
 import {
   defaultTheme,
@@ -6,87 +7,46 @@ import {
   embedUrl,
   handshakeMessage,
   isEmbedMessageSource,
+  labelMax,
   legacyInitMessage,
   maxFrameHeight,
+  minFrameHeight,
   parseHostMessage,
+  protocolVersion,
   themeFromAttributes,
   themeMessage,
 } from "../src/protocol.ts";
+
+const vectors = JSON.parse(
+  readFileSync(new URL("./fixtures/embed-protocol.json", import.meta.url), "utf8"),
+) as {
+  valid: { name: string; data: unknown; parsed: unknown }[];
+  invalid: { name: string; data: unknown }[];
+  wrongWindow: { origin: string; expectedOrigin: string; data: unknown };
+  unknownProtocol: { data: unknown; fallback: unknown };
+};
 
 const frame = {};
 const origin = "https://service.example";
 
 describe("parseHostMessage", () => {
-  it("accepts protocol 1 messages with exact keys", () => {
-    assert.deepEqual(parseHostMessage({ source: "bugbeacon", protocol: 1, type: "ready" }), {
-      kind: "ready",
-    });
-    assert.deepEqual(
-      parseHostMessage({ source: "bugbeacon", protocol: 1, type: "close-request" }),
-      {
-        kind: "close-request",
-      },
-    );
-    assert.deepEqual(parseHostMessage({ source: "bugbeacon", protocol: 1, type: "submitted" }), {
-      kind: "submitted",
-    });
-    assert.deepEqual(
-      parseHostMessage({ source: "bugbeacon", protocol: 1, type: "resize", height: 480 }),
-      {
-        kind: "resize",
-        height: 480,
-      },
-    );
-  });
-
-  it("keeps the legacy version 1 messages", () => {
-    assert.deepEqual(parseHostMessage({ type: "bugbeacon:ready", version: 1 }), {
-      kind: "legacy-ready",
-    });
-    assert.deepEqual(parseHostMessage({ type: "bugbeacon:close", version: 1 }), {
-      kind: "legacy-close",
-    });
+  it("accepts every valid vector and rejects every invalid vector", () => {
+    for (const vector of vectors.valid) {
+      assert.deepEqual(parseHostMessage(vector.data), vector.parsed, vector.name);
+    }
+    for (const vector of vectors.invalid) {
+      assert.equal(parseHostMessage(vector.data), null, vector.name);
+    }
+    assert.equal(parseHostMessage(Object.create(null)), null);
     assert.deepEqual(legacyInitMessage(), { type: "bugbeacon:init", version: 1 });
   });
 
-  it("rejects extra fields, wrong versions, bad heights, and non-objects", () => {
-    const rejected = [
-      null,
-      [],
-      "ready",
-      Object.create(null),
-      { type: "bugbeacon:close", version: 1, secret: "no" },
-      { type: "bugbeacon:close", version: 2 },
-      { type: "bugbeacon:close", version: "1" },
-      { source: "featurefountain", protocol: 1, type: "close-request" },
-      { source: "bugbeacon", protocol: 2, type: "close-request" },
-      { source: "bugbeacon", protocol: "1", type: "ready" },
-      { source: "bugbeacon", protocol: 1, type: "ready", embed: true },
-      { source: "bugbeacon", protocol: 1, type: "resize", height: 480, extra: 1 },
-      { source: "bugbeacon", protocol: 1, type: "resize", height: 0 },
-      { source: "bugbeacon", protocol: 1, type: "resize", height: maxFrameHeight + 1 },
-      { source: "bugbeacon", protocol: 1, type: "resize", height: 1.5 },
-      { source: "bugbeacon", protocol: 1, type: "resize", height: "480" },
-      { source: "bugbeacon", protocol: 1, type: "theme" },
-      { source: "bugbeacon", protocol: 1, type: "handshake" },
-      { source: "bugbeacon", protocol: 1, type: "nope" },
-    ];
-    for (const value of rejected) assert.equal(parseHostMessage(value), null);
-    assert.deepEqual(
-      parseHostMessage({ source: "bugbeacon", protocol: 1, type: "resize", height: 1 }),
-      {
-        kind: "resize",
-        height: 1,
-      },
-    );
-    assert.deepEqual(
-      parseHostMessage({
-        source: "bugbeacon",
-        protocol: 1,
-        type: "resize",
-        height: maxFrameHeight,
-      }),
-      { kind: "resize", height: maxFrameHeight },
+  it("ignores protocol 2 and still accepts the legacy fallback", () => {
+    assert.equal(parseHostMessage(vectors.unknownProtocol.data), null);
+    assert.deepEqual(parseHostMessage(vectors.unknownProtocol.fallback), { kind: "legacy-close" });
+    assert.equal(
+      vectors.invalid.some((vector) => vector.name === "protocol-2"),
+      true,
     );
   });
 });
@@ -99,6 +59,14 @@ describe("isEmbedMessageSource", () => {
     assert.equal(isEmbedMessageSource(origin, frame, origin, null), false);
     assert.equal(isEmbedMessageSource("null", frame, "null", frame), false);
     assert.equal(isEmbedMessageSource("", frame, "", frame), false);
+  });
+
+  it("rejects a different window on the endpoint origin", () => {
+    const otherWindow = {};
+    const { origin: messageOrigin, expectedOrigin, data } = vectors.wrongWindow;
+    assert.deepEqual(parseHostMessage(data), { kind: "close-request" });
+    assert.equal(isEmbedMessageSource(messageOrigin, otherWindow, expectedOrigin, frame), false);
+    assert.equal(isEmbedMessageSource(messageOrigin, frame, expectedOrigin, frame), true);
   });
 });
 
@@ -137,6 +105,20 @@ describe("theme and embed url", () => {
     assert.equal(embedSearch("https://host.example"), "origin=https%3A%2F%2Fhost.example&embed=1");
     assert.equal(url.includes("accent"), false);
     assert.equal(url.includes("theme"), false);
+    assert.equal(
+      embedUrl(origin, "a/b c", "https://host.example"),
+      `${origin}/embed/a%2Fb%20c?origin=https%3A%2F%2Fhost.example&embed=1`,
+    );
+  });
+
+  it("publishes the protocol constants from the built subpath", async () => {
+    const published = await import("../dist/protocol.js");
+    assert.equal(published.protocolVersion, protocolVersion);
+    assert.equal(published.minFrameHeight, minFrameHeight);
+    assert.equal(published.maxFrameHeight, maxFrameHeight);
+    assert.equal(published.labelMax, labelMax);
+    assert.equal(typeof published.parseHostMessage, "function");
+    assert.equal(published.parseHostMessage(vectors.unknownProtocol.data), null);
   });
 
   it("falls back when theme attributes are invalid", () => {

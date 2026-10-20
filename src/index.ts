@@ -1,3 +1,4 @@
+import { endpointOrigin } from "./endpoint";
 import {
   defaultTheme,
   embedUrl,
@@ -12,30 +13,6 @@ import {
 
 const projectIdPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 const submittedStatus = "Report submitted.";
-
-function isLoopback(hostname: string): boolean {
-  return hostname === "localhost" || hostname === "[::1]" || /^127\.\d+\.\d+\.\d+$/.test(hostname);
-}
-
-function endpointOrigin(value: string, host: Location): string | null {
-  try {
-    const url = new URL(value);
-    const local = url.protocol === "http:" && isLoopback(url.hostname) && isLoopback(host.hostname);
-    if (
-      (url.protocol !== "https:" && !local) ||
-      url.username ||
-      url.password ||
-      url.pathname !== "/" ||
-      url.search ||
-      url.hash ||
-      host.origin === "null"
-    )
-      return null;
-    return url.origin;
-  } catch {
-    return null;
-  }
-}
 
 const markup = `
   <style>

@@ -43,7 +43,9 @@ Theme values are not put in the embed URL.
 
 ## Embed protocol
 
-The dialog shell (overlay, the only Close button, Escape, focus trap, and backdrop click) lives in this SDK. Close works even when the iframe never loads. The iframe URL is `{endpoint}/embed/{project-id}?origin={parentOrigin}&embed=1`.
+The dialog shell (overlay, the only Close button, Escape, focus trap, and backdrop click) lives in this SDK. Close works even when the iframe never loads. The iframe URL is `{endpoint}/embed/{encodeURIComponent(project-id)}?origin={parentOrigin}&embed=1`.
+
+Import the shared parser from `@bugbeacon/browser/protocol` (`parseHostMessage`, `protocolVersion`, `minFrameHeight`, `maxFrameHeight`, `labelMax`). The hosted form should use that module instead of re-declaring the types.
 
 Messages use `postMessage` and are accepted only from the iframe window on the `endpoint` origin. Each message is a plain object with exact keys.
 
@@ -79,7 +81,7 @@ Form to parent:
 { "source": "bugbeacon", "protocol": 1, "type": "resize", "height": 480 }
 ```
 
-`height` is an integer CSS pixel count from 1 to 4096. The iframe uses that height and does not scroll itself.
+`height` is an integer CSS pixel count from 100 to 4096, the same range as the iframe's `min-height`. The iframe uses that height and does not scroll itself.
 
 ```json
 { "source": "bugbeacon", "protocol": 1, "type": "close-request" }
@@ -93,7 +95,15 @@ Form to parent:
 
 `source` is the product key. FeatureFountain uses the same shapes with `"source": "featurefountain"`.
 
-Legacy 0.1.0 messages still work. The form sends `{ "type": "bugbeacon:ready", "version": 1 }`, the SDK replies `{ "type": "bugbeacon:init", "version": 1 }`, and `{ "type": "bugbeacon:close", "version": 1 }` closes the dialog. A form that does not receive `embed=1` and `handshake` keeps its own close button.
+Legacy 0.1.0 messages still work. The form sends `{ "type": "bugbeacon:ready", "version": 1 }`, the SDK replies `{ "type": "bugbeacon:init", "version": 1 }`, and `{ "type": "bugbeacon:close", "version": 1 }` closes the dialog. A form that does not receive `embed=1` and `handshake` keeps its own close button. TODO(Matthew): set the date when these legacy messages are removed.
+
+## Version negotiation
+
+`handshake.protocol` is the only version this SDK speaks, which is `1`. A message with any other `protocol` number is ignored. The dialog stays open, and `resize` or `close-request` at that version does nothing. If the form also sends a legacy `bugbeacon:ready` or `bugbeacon:close` message with `version: 1`, that message still works. That is the fallback.
+
+## Optional channel
+
+Protocol 1 does not include a `channel` field, and this SDK does not send one. A later addition can pass a random per-mount id as a `channel` query parameter and echo that string on each message without bumping the protocol number. Receivers would ignore a `channel` that does not match the mount, and would still accept a message that omits `channel`. Do not send `channel` until both sides accept it. Today an extra field is rejected.
 
 ## Requirement
 

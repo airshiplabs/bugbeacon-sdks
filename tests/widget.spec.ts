@@ -61,6 +61,15 @@ async function mount(
   await page.route("**/*", async (route) => {
     const request = route.request();
     const url = new URL(request.url());
+    if (url.pathname === "/embed/sibling") {
+      await route.fulfill({
+        contentType: "text/html",
+        body: `<!doctype html><html><body data-posted="close-request"><script>
+          parent.postMessage({ source: "bugbeacon", protocol: 1, type: "close-request" }, ${JSON.stringify(host)});
+        </script></body></html>`,
+      });
+      return;
+    }
     if (url.pathname.startsWith("/embed/")) {
       requests.push({ url: request.url(), referer: request.headers().referer });
       if (options.embed === "abort") {
@@ -229,10 +238,10 @@ for (const endpoint of [
   });
 }
 
-test("loopback development allows a loopback HTTP service", async ({ page }) => {
+test("localhost HTTP is allowed only when the page is also localhost", async ({ page }) => {
   const { requests } = await mount(page, {
     host: "http://localhost:4100",
-    endpoint: "http://127.0.0.1:4200",
+    endpoint: "http://localhost:4200",
   });
   await page.getByRole("button", { name: "Report Bug", exact: true }).click();
   await expect(page.frameLocator("iframe").locator("body")).toHaveAttribute(
@@ -240,8 +249,17 @@ test("loopback development allows a loopback HTTP service", async ({ page }) => 
     "true",
   );
   expect(requests[0].url).toBe(
-    `http://127.0.0.1:4200/embed/${projectId}?origin=http%3A%2F%2Flocalhost%3A4100&embed=1`,
+    `http://localhost:4200/embed/${projectId}?origin=http%3A%2F%2Flocalhost%3A4100&embed=1`,
   );
+});
+
+test("http on 127.0.0.1 is rejected even from a localhost page", async ({ page }) => {
+  const { requests } = await mount(page, {
+    host: "http://localhost:4100",
+    endpoint: "http://127.0.0.1:4200",
+  });
+  await expect(page.getByRole("button", { name: "Report Bug", exact: true })).toBeDisabled();
+  expect(requests).toHaveLength(0);
 });
 
 test("invalid project IDs never navigate and attribute corrections recover", async ({ page }) => {
@@ -476,6 +494,53 @@ test("dialog closes from the shell when the iframe never loads", async ({ page }
   await expect(dialog).toBeVisible();
   await page.mouse.click(2, 2);
   await expect(dialog).toBeHidden();
+  await expect(trigger).toBeFocused();
+});
+
+test("a sibling window on the endpoint origin cannot close the dialog", async ({ page }) => {
+  await mount(page, { mode: "protocol" });
+  await page.getByRole("button", { name: "Report Bug", exact: true }).click();
+  await expect(page.locator("bug-beacon").frameLocator("iframe").locator("body")).toHaveAttribute(
+    "data-initialized",
+    "true",
+  );
+  await page.evaluate((service) => {
+    const frame = document.createElement("iframe");
+    frame.id = "sibling-frame";
+    frame.src = `${service}/embed/sibling`;
+    document.body.append(frame);
+  }, serviceOrigin);
+  await expect(page.frameLocator("#sibling-frame").locator("body")).toHaveAttribute(
+    "data-posted",
+    "close-request",
+  );
+  await expect(page.getByRole("dialog")).toBeVisible();
+});
+
+test("protocol 2 is ignored and a legacy close still works", async ({ page }) => {
+  await mount(page, { mode: "protocol" });
+  const trigger = page.getByRole("button", { name: "Report Bug", exact: true });
+  await trigger.click();
+  await expect(page.locator("bug-beacon").frameLocator("iframe").locator("body")).toHaveAttribute(
+    "data-initialized",
+    "true",
+  );
+  const post = (data: unknown) =>
+    page.evaluate((payload) => {
+      const source = document
+        .querySelector("bug-beacon")!
+        .shadowRoot!.querySelector("iframe")!.contentWindow;
+      const event = new MessageEvent("message", { origin: payload.origin, data: payload.data });
+      Object.defineProperty(event, "source", { value: source });
+      window.dispatchEvent(event);
+    }, data);
+  await post({
+    origin: serviceOrigin,
+    data: { source: "bugbeacon", protocol: 2, type: "close-request" },
+  });
+  await expect(page.getByRole("dialog")).toBeVisible();
+  await post({ origin: serviceOrigin, data: { type: "bugbeacon:close", version: 1 } });
+  await expect(page.getByRole("dialog")).toBeHidden();
   await expect(trigger).toBeFocused();
 });
 

@@ -2,7 +2,9 @@
 
 export const protocolVersion = 1;
 export const messageSource = "bugbeacon";
+export const minFrameHeight = 100;
 export const maxFrameHeight = 4096;
+export const labelMax = 60;
 
 export interface ThemeLabels {
   trigger: string;
@@ -37,7 +39,6 @@ export type HostMessage =
   | { kind: "submitted" };
 
 const accentPattern = /^#[0-9a-f]{6}$/i;
-const labelMax = 60;
 
 function plainRecord(value: unknown): Record<string, unknown> | null {
   if (!value || typeof value !== "object" || Array.isArray(value)) return null;
@@ -47,7 +48,10 @@ function plainRecord(value: unknown): Record<string, unknown> | null {
 
 function validHeight(value: unknown): value is number {
   return (
-    typeof value === "number" && Number.isInteger(value) && value >= 1 && value <= maxFrameHeight
+    typeof value === "number" &&
+    Number.isInteger(value) &&
+    value >= minFrameHeight &&
+    value <= maxFrameHeight
   );
 }
 
@@ -92,7 +96,7 @@ export function embedSearch(parentOrigin: string): string {
 }
 
 export function embedUrl(serviceOrigin: string, projectId: string, parentOrigin: string): string {
-  return `${serviceOrigin}/embed/${projectId}?${embedSearch(parentOrigin)}`;
+  return `${serviceOrigin}/embed/${encodeURIComponent(projectId)}?${embedSearch(parentOrigin)}`;
 }
 
 export function legacyInitMessage(): { type: "bugbeacon:init"; version: 1 } {

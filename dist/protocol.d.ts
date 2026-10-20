@@ -1,7 +1,9 @@
 /** Wire protocol shared by the SDK and the hosted form. Version 1. */
 export declare const protocolVersion = 1;
 export declare const messageSource = "bugbeacon";
+export declare const minFrameHeight = 100;
 export declare const maxFrameHeight = 4096;
+export declare const labelMax = 60;
 export interface ThemeLabels {
     trigger: string;
     title: string;

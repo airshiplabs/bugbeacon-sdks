@@ -1,118 +1,31 @@
 /*! @bugbeacon/browser v0.1.0 | MIT License | https://github.com/airshiplabs/bugbeacon-sdks */
 
-// src/protocol.ts
-var protocolVersion = 1;
-var messageSource = "bugbeacon";
-var maxFrameHeight = 4096;
-var defaultTheme = {
-  accent: "#365fe8",
-  colorScheme: "light",
-  labels: {
-    trigger: "Report Bug",
-    title: "Report a bug",
-    close: "Close",
-    submit: "Send report"
-  }
-};
-var accentPattern = /^#[0-9a-f]{6}$/i;
-var labelMax = 60;
-function plainRecord(value) {
-  if (!value || typeof value !== "object" || Array.isArray(value)) return null;
-  if (Object.getPrototypeOf(value) !== Object.prototype) return null;
-  return value;
-}
-function validHeight(value) {
-  return typeof value === "number" && Number.isInteger(value) && value >= 1 && value <= maxFrameHeight;
-}
-function hasControlCharacter(value) {
-  for (let index = 0; index < value.length; index += 1) {
-    const code = value.charCodeAt(index);
-    if (code <= 31 || code === 127) return true;
-  }
-  return false;
-}
-function label(value, fallback) {
-  if (value === null) return fallback;
-  const trimmed = value.trim();
-  if (trimmed.length === 0 || trimmed.length > labelMax || hasControlCharacter(trimmed))
-    return fallback;
-  return trimmed;
-}
-function themeFromAttributes(read) {
-  const accent = read("accent");
-  const scheme = read("color-scheme");
-  return {
-    accent: accent !== null && accentPattern.test(accent.trim()) ? accent.trim().toLowerCase() : defaultTheme.accent,
-    colorScheme: scheme === "light" || scheme === "dark" ? scheme : defaultTheme.colorScheme,
-    labels: {
-      trigger: label(read("label"), defaultTheme.labels.trigger),
-      title: label(read("heading"), defaultTheme.labels.title),
-      close: label(read("close-label"), defaultTheme.labels.close),
-      submit: label(read("submit-label"), defaultTheme.labels.submit)
-    }
-  };
-}
-function embedSearch(parentOrigin) {
-  return new URLSearchParams({ origin: parentOrigin, embed: "1" }).toString();
-}
-function embedUrl(serviceOrigin, projectId, parentOrigin) {
-  return `${serviceOrigin}/embed/${projectId}?${embedSearch(parentOrigin)}`;
-}
-function legacyInitMessage() {
-  return { type: "bugbeacon:init", version: 1 };
-}
-function handshakeMessage() {
-  return { source: messageSource, protocol: protocolVersion, type: "handshake", embed: true };
-}
-function themeMessage(theme) {
-  return {
-    source: messageSource,
-    protocol: protocolVersion,
-    type: "theme",
-    accent: theme.accent,
-    colorScheme: theme.colorScheme,
-    labels: { ...theme.labels }
-  };
-}
-function isEmbedMessageSource(origin, source, expectedOrigin, frame) {
-  return typeof frame === "object" && frame !== null && source === frame && origin === expectedOrigin && expectedOrigin.length > 0 && expectedOrigin !== "null";
-}
-function parseHostMessage(data) {
-  const message = plainRecord(data);
-  if (!message) return null;
-  const keys = Object.keys(message);
-  if (keys.length === 2 && message.version === 1) {
-    if (message.type === "bugbeacon:ready") return { kind: "legacy-ready" };
-    if (message.type === "bugbeacon:close") return { kind: "legacy-close" };
-    return null;
-  }
-  if (message.source !== messageSource || message.protocol !== protocolVersion) return null;
-  if (message.type === "ready" || message.type === "close-request" || message.type === "submitted") {
-    return keys.length === 3 ? { kind: message.type } : null;
-  }
-  if (message.type === "resize" && keys.length === 4 && validHeight(message.height)) {
-    return { kind: "resize", height: message.height };
-  }
-  return null;
-}
-
-// src/index.ts
-var projectIdPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
-var submittedStatus = "Report submitted.";
-function isLoopback(hostname) {
-  return hostname === "localhost" || hostname === "[::1]" || /^127\.\d+\.\d+\.\d+$/.test(hostname);
-}
+// src/endpoint.ts
 function endpointOrigin(value, host) {
   try {
     const url = new URL(value);
-    const local = url.protocol === "http:" && isLoopback(url.hostname) && isLoopback(host.hostname);
-    if (url.protocol !== "https:" && !local || url.username || url.password || url.pathname !== "/" || url.search || url.hash || host.origin === "null")
+    const localhostHttp = url.protocol === "http:" && url.hostname === "localhost" && host.hostname === "localhost";
+    if (url.protocol !== "https:" && !localhostHttp || url.username || url.password || url.pathname !== "/" || url.search || url.hash || host.origin === "null")
       return null;
     return url.origin;
   } catch {
     return null;
   }
 }
+
+// src/index.ts
+import {
+  defaultTheme,
+  embedUrl,
+  handshakeMessage,
+  isEmbedMessageSource,
+  legacyInitMessage,
+  parseHostMessage,
+  themeFromAttributes,
+  themeMessage
+} from "./protocol.js";
+var projectIdPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+var submittedStatus = "Report submitted.";
 var markup = `
   <style>
     :host {

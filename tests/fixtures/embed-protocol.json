@@ -1,0 +1,95 @@
+{
+  "valid": [
+    {
+      "name": "ready",
+      "data": { "source": "bugbeacon", "protocol": 1, "type": "ready" },
+      "parsed": { "kind": "ready" }
+    },
+    {
+      "name": "resize",
+      "data": { "source": "bugbeacon", "protocol": 1, "type": "resize", "height": 480 },
+      "parsed": { "kind": "resize", "height": 480 }
+    },
+    {
+      "name": "resize-min",
+      "data": { "source": "bugbeacon", "protocol": 1, "type": "resize", "height": 100 },
+      "parsed": { "kind": "resize", "height": 100 }
+    },
+    {
+      "name": "resize-max",
+      "data": { "source": "bugbeacon", "protocol": 1, "type": "resize", "height": 4096 },
+      "parsed": { "kind": "resize", "height": 4096 }
+    },
+    {
+      "name": "close-request",
+      "data": { "source": "bugbeacon", "protocol": 1, "type": "close-request" },
+      "parsed": { "kind": "close-request" }
+    },
+    {
+      "name": "submitted",
+      "data": { "source": "bugbeacon", "protocol": 1, "type": "submitted" },
+      "parsed": { "kind": "submitted" }
+    },
+    {
+      "name": "legacy-ready",
+      "data": { "type": "bugbeacon:ready", "version": 1 },
+      "parsed": { "kind": "legacy-ready" }
+    },
+    {
+      "name": "legacy-close",
+      "data": { "type": "bugbeacon:close", "version": 1 },
+      "parsed": { "kind": "legacy-close" }
+    }
+  ],
+  "invalid": [
+    {
+      "name": "protocol-2",
+      "data": { "source": "bugbeacon", "protocol": 2, "type": "close-request" }
+    },
+    {
+      "name": "protocol-2-resize",
+      "data": { "source": "bugbeacon", "protocol": 2, "type": "resize", "height": 200 }
+    },
+    {
+      "name": "protocol-string",
+      "data": { "source": "bugbeacon", "protocol": "1", "type": "ready" }
+    },
+    {
+      "name": "extra-field",
+      "data": { "source": "bugbeacon", "protocol": 1, "type": "ready", "embed": true }
+    },
+    {
+      "name": "resize-below-min",
+      "data": { "source": "bugbeacon", "protocol": 1, "type": "resize", "height": 99 }
+    },
+    {
+      "name": "resize-zero",
+      "data": { "source": "bugbeacon", "protocol": 1, "type": "resize", "height": 0 }
+    },
+    {
+      "name": "resize-fraction",
+      "data": { "source": "bugbeacon", "protocol": 1, "type": "resize", "height": 100.5 }
+    },
+    {
+      "name": "resize-over-max",
+      "data": { "source": "bugbeacon", "protocol": 1, "type": "resize", "height": 4097 }
+    },
+    {
+      "name": "wrong-source",
+      "data": { "source": "featurefountain", "protocol": 1, "type": "ready" }
+    },
+    { "name": "null", "data": null },
+    { "name": "array", "data": [] },
+    { "name": "legacy-extra", "data": { "type": "bugbeacon:close", "version": 1, "secret": "no" } },
+    { "name": "legacy-version-2", "data": { "type": "bugbeacon:close", "version": 2 } }
+  ],
+  "wrongWindow": {
+    "origin": "https://service.example",
+    "expectedOrigin": "https://service.example",
+    "data": { "source": "bugbeacon", "protocol": 1, "type": "close-request" }
+  },
+  "unknownProtocol": {
+    "data": { "source": "bugbeacon", "protocol": 2, "type": "close-request" },
+    "fallback": { "type": "bugbeacon:close", "version": 1 }
+  }
+}
