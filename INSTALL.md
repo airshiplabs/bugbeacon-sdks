@@ -71,15 +71,26 @@ The element observes only these attributes (see `src/index.ts`):
 - **HTTP** only for loopback development when **both** the BugBeacon service and the host page use loopback hostnames (`localhost`, `127.*`, or `::1`).
 - Invalid `project-id` or `endpoint` disables the button and shows: _Bug reporting is unavailable. Check the widget configuration._
 
-There are no other element attributes, properties, or slots in this SDK.
+Optional theme attributes (all fall back to BugBeacon defaults when missing or invalid):
+
+| Attribute      | Default        | Value                                                       |
+| -------------- | -------------- | ----------------------------------------------------------- |
+| `label`        | `Report Bug`   | Trigger button text. 1–60 characters.                       |
+| `heading`      | `Report a bug` | Dialog title.                                               |
+| `close-label`  | `Close`        | The SDK Close button. The dialog has one Close control.     |
+| `submit-label` | `Send report`  | Submit label sent to the hosted form.                       |
+| `accent`       | `#365fe8`      | `#rrggbb` hex. Applied to the trigger and sent to the form. |
+| `color-scheme` | `light`        | `light` or `dark`.                                          |
+
+There are no other element attributes, properties, or slots in this SDK. Theme values are sent in a `theme` message after the form is ready. They are not placed in the embed URL. Plan limits are enforced by the hosted form, not by this package.
 
 **Embed URL (when the button opens):**
 
 ```http
-{endpoint}/embed/{project-id}?origin={encodeURIComponent(window.location.origin)}
+{endpoint}/embed/{project-id}?origin={encodeURIComponent(window.location.origin)}&embed=1
 ```
 
-The widget sends only the public project ID and the parent page’s `window.location.origin` (not path, query, or hash). It does not attach application version or environment name; those are not part of this browser SDK.
+The widget sends only the public project ID, the parent page’s `window.location.origin` (not path, query, or hash), and `embed=1`. `embed=1` plus the handshake message tells the hosted form to hide its own close button. A 0.1.0 embed without those signals stays in legacy mode. The widget does not attach application version or environment name.
 
 ### Environment variables (host app conventions)
 
@@ -223,7 +234,11 @@ On the **host page** CSP:
 | `script-src` | `https://bugbeacon.ai` when using the hosted widget script (or your origin if you self-host `bugbeacon.js`) |
 | `frame-src`  | The configured `endpoint` origin (for example `https://bugbeacon.ai`)                                       |
 
-The iframe loads BugBeacon’s embed document and form; challenge and API requests run inside that document’s origin. The parent widget only uses `postMessage` with the configured `endpoint` origin (`bugbeacon:ready`, `bugbeacon:init`, `bugbeacon:close`, protocol `version: 1`).
+The iframe loads BugBeacon’s embed document and form; challenge and API requests run inside that document’s origin. The parent widget only uses `postMessage` with the configured `endpoint` origin.
+
+Protocol 1 messages are plain objects with exact keys. The form sends `ready`, `resize` (`height` integer 1–4096), `close-request`, and `submitted`. After `ready`, the SDK sends `handshake` (`embed: true`) and then `theme` (`accent`, `colorScheme`, `labels`). See [README](README.md) for the JSON shapes.
+
+Legacy messages still work: form `bugbeacon:ready` (`version: 1`), SDK reply `bugbeacon:init` (`version: 1`), form `bugbeacon:close` (`version: 1`).
 
 ## GitHub and BugBeacon setup
 

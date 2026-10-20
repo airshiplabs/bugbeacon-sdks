@@ -42,7 +42,7 @@
     "lint:fix": "oxlint --fix .",
     "format": "oxfmt .",
     "format:check": "oxfmt --check .",
-    "test": "npm run build && playwright test",
+    "test": "npm run build && node --experimental-strip-types --test tests/protocol.test.ts && playwright test",
     "check": "npm run format:check && npm run lint && npm run typecheck && npm test"
   },
   "devDependencies": {

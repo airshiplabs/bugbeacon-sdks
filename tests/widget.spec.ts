@@ -6,12 +6,55 @@ const serviceOrigin = "https://service.example";
 const hostOrigin = "https://host.example";
 const bundle = await readFile(new URL("../dist/bugbeacon.js", import.meta.url), "utf8");
 
+function embedDocument(host: string, mode: "legacy" | "protocol"): string {
+  const target = JSON.stringify(host);
+  if (mode === "protocol") {
+    return `<!doctype html><html><body><label>Title<input></label><button id="hosted-close">Close</button><button id="close">Done</button><button id="send">Send</button><script>
+      window.addEventListener('message', event => {
+        if (event.origin === ${target} && event.source === parent) {
+          window.recordMessage(event.data);
+          if (event.data && event.data.type === 'handshake' && event.data.embed === true) {
+            document.body.dataset.initialized = 'true';
+            document.querySelector('#hosted-close').hidden = true;
+          }
+        }
+      });
+      parent.postMessage({ source: 'bugbeacon', protocol: 1, type: 'ready' }, ${target});
+      parent.postMessage({ source: 'bugbeacon', protocol: 1, type: 'resize', height: 480 }, ${target});
+      document.querySelector('#close').onclick = () => parent.postMessage({ source: 'bugbeacon', protocol: 1, type: 'close-request' }, ${target});
+      document.querySelector('#send').onclick = () => parent.postMessage({ source: 'bugbeacon', protocol: 1, type: 'submitted' }, ${target});
+    </script></body></html>`;
+  }
+  return `<!doctype html><html><body><label>Title<input></label><button id="close">Done</button><script>
+    window.addEventListener('message', event => {
+      if (event.origin === ${target} && event.source === parent) {
+        window.recordMessage(event.data);
+        document.body.dataset.initialized = String(event.data.type === 'bugbeacon:init');
+      }
+    });
+    parent.postMessage({ type: 'bugbeacon:ready', version: 1 }, ${target});
+    document.querySelector('#close').onclick = () => parent.postMessage({ type: 'bugbeacon:close', version: 1 }, ${target});
+    window.addEventListener('keydown', event => {
+      if (event.key === 'Escape') parent.postMessage({ type: 'bugbeacon:close', version: 1 }, ${target});
+    });
+  </script></body></html>`;
+}
+
 async function mount(
   page: Page,
-  options: { endpoint?: string; host?: string; count?: number } = {},
+  options: {
+    endpoint?: string;
+    host?: string;
+    count?: number;
+    mode?: "legacy" | "protocol";
+    embed?: "load" | "abort";
+    attributes?: string;
+  } = {},
 ) {
   const host = options.host ?? hostOrigin;
   const endpoint = options.endpoint ?? serviceOrigin;
+  const mode = options.mode ?? "legacy";
+  const attributes = options.attributes ?? "";
   const messages: unknown[] = [];
   const requests: { url: string; referer?: string }[] = [];
   await page.exposeFunction("recordMessage", (data: unknown) => messages.push(data));
@@ -20,26 +63,18 @@ async function mount(
     const url = new URL(request.url());
     if (url.pathname.startsWith("/embed/")) {
       requests.push({ url: request.url(), referer: request.headers().referer });
+      if (options.embed === "abort") {
+        await route.abort();
+        return;
+      }
       await route.fulfill({
         contentType: "text/html",
-        body: `<!doctype html><html><body><label>Title<input></label><button id="close">Done</button><script>
-          window.addEventListener('message', event => {
-            if (event.origin === ${JSON.stringify(host)} && event.source === parent) {
-              window.recordMessage(event.data);
-              document.body.dataset.initialized = String(event.data.type === 'bugbeacon:init');
-            }
-          });
-          parent.postMessage({ type: 'bugbeacon:ready', version: 1 }, ${JSON.stringify(host)});
-          document.querySelector('#close').onclick = () => parent.postMessage({ type: 'bugbeacon:close', version: 1 }, ${JSON.stringify(host)});
-          window.addEventListener('keydown', event => {
-            if (event.key === 'Escape') parent.postMessage({ type: 'bugbeacon:close', version: 1 }, ${JSON.stringify(host)});
-          });
-        </script></body></html>`,
+        body: embedDocument(host, mode),
       });
     } else {
       await route.fulfill({
         contentType: "text/html",
-        body: `<!doctype html><html><body><button>Before widget</button>${Array.from({ length: options.count ?? 1 }, () => `<bug-beacon project-id="${projectId}" endpoint="${endpoint}"></bug-beacon>`).join("")}<button>After widget</button></body></html>`,
+        body: `<!doctype html><html><body><button>Before widget</button>${Array.from({ length: options.count ?? 1 }, () => `<bug-beacon project-id="${projectId}" endpoint="${endpoint}" ${attributes}></bug-beacon>`).join("")}<button>After widget</button></body></html>`,
       });
     }
   });
@@ -73,7 +108,7 @@ test("plain script registers once and embeds only the project and parent origin"
   );
   expect(requests).toEqual([
     {
-      url: `${serviceOrigin}/embed/${projectId}?origin=${encodeURIComponent(hostOrigin)}`,
+      url: `${serviceOrigin}/embed/${projectId}?origin=${encodeURIComponent(hostOrigin)}&embed=1`,
       referer: undefined,
     },
   ]);
@@ -205,7 +240,7 @@ test("loopback development allows a loopback HTTP service", async ({ page }) => 
     "true",
   );
   expect(requests[0].url).toBe(
-    `http://127.0.0.1:4200/embed/${projectId}?origin=http%3A%2F%2Flocalhost%3A4100`,
+    `http://127.0.0.1:4200/embed/${projectId}?origin=http%3A%2F%2Flocalhost%3A4100&embed=1`,
   );
 });
 
@@ -280,6 +315,162 @@ test("configuration changes close the old form and reopen at the new endpoint", 
     "true",
   );
   expect(new URL(requests[1].url).origin).toBe("https://replacement.example");
+});
+
+test("protocol handshake hides the hosted close, themes, and resizes", async ({ page }) => {
+  const { messages, requests } = await mount(page, {
+    mode: "protocol",
+    attributes:
+      'accent="#A1B2C3" color-scheme="dark" label="Found a bug" heading="Tell us" close-label="Dismiss" submit-label="Send it"',
+  });
+  const trigger = page.getByRole("button", { name: "Found a bug", exact: true });
+  await trigger.click();
+  await expect(page.frameLocator("iframe").locator("body")).toHaveAttribute(
+    "data-initialized",
+    "true",
+  );
+  await expect(
+    page.frameLocator("iframe").getByRole("button", { name: "Close", exact: true }),
+  ).toBeHidden();
+  await expect(page.getByRole("button", { name: "Dismiss", exact: true })).toHaveCount(1);
+  await expect(page.getByRole("heading", { name: "Tell us" })).toBeVisible();
+  expect(requests[0]?.url).toContain("embed=1");
+  expect(requests[0]?.url).not.toContain("accent");
+  expect(requests[0]?.url).not.toContain("color-scheme");
+  await expect
+    .poll(() => messages)
+    .toEqual([
+      { source: "bugbeacon", protocol: 1, type: "handshake", embed: true },
+      {
+        source: "bugbeacon",
+        protocol: 1,
+        type: "theme",
+        accent: "#a1b2c3",
+        colorScheme: "dark",
+        labels: { trigger: "Found a bug", title: "Tell us", close: "Dismiss", submit: "Send it" },
+      },
+    ]);
+  await expect(page.locator("iframe")).toHaveJSProperty("style.height", "480px");
+  const surface = await page.locator("bug-beacon").evaluate((widget) => {
+    const dialog = widget.shadowRoot!.querySelector("dialog")!;
+    return getComputedStyle(dialog).backgroundColor;
+  });
+  expect(surface).toBe("rgb(18, 26, 39)");
+});
+
+test("theme updates after ready are sent again and invalid accents stay default", async ({
+  page,
+}) => {
+  const { messages } = await mount(page, { mode: "protocol", attributes: 'accent="red"' });
+  await page.getByRole("button", { name: "Report Bug", exact: true }).click();
+  await expect(page.frameLocator("iframe").locator("body")).toHaveAttribute(
+    "data-initialized",
+    "true",
+  );
+  expect(messages[1]).toMatchObject({ type: "theme", accent: "#365fe8", colorScheme: "light" });
+  await page.locator("bug-beacon").evaluate((widget) => {
+    widget.setAttribute("accent", "#112233");
+    widget.setAttribute("color-scheme", "dark");
+  });
+  await expect.poll(() => messages.length).toBe(3);
+  expect(messages[2]).toMatchObject({
+    type: "theme",
+    accent: "#112233",
+    colorScheme: "dark",
+  });
+});
+
+test("close-request closes and submitted leaves the dialog open", async ({ page }) => {
+  await mount(page, { mode: "protocol" });
+  const trigger = page.getByRole("button", { name: "Report Bug", exact: true });
+  await trigger.click();
+  await expect(page.frameLocator("iframe").locator("body")).toHaveAttribute(
+    "data-initialized",
+    "true",
+  );
+  await page.frameLocator("iframe").getByRole("button", { name: "Send", exact: true }).click();
+  await expect(page.getByRole("dialog")).toBeVisible();
+  await expect(page.getByRole("status")).toHaveText("Report submitted.");
+  await page.frameLocator("iframe").getByRole("button", { name: "Done", exact: true }).click();
+  await expect(page.getByRole("dialog")).toBeHidden();
+  await expect(trigger).toBeFocused();
+});
+
+test("forged protocol messages cannot close or resize", async ({ page }) => {
+  await mount(page, { mode: "protocol" });
+  await page.getByRole("button", { name: "Report Bug", exact: true }).click();
+  await expect(page.frameLocator("iframe").locator("body")).toHaveAttribute(
+    "data-initialized",
+    "true",
+  );
+  await expect(page.locator("iframe")).toHaveJSProperty("style.height", "480px");
+  await page.evaluate((service) => {
+    const source = document
+      .querySelector("bug-beacon")!
+      .shadowRoot!.querySelector("iframe")!.contentWindow;
+    const candidates = [
+      {
+        origin: service,
+        source: window,
+        data: { source: "bugbeacon", protocol: 1, type: "close-request" },
+      },
+      {
+        origin: "https://attacker.example",
+        source,
+        data: { source: "bugbeacon", protocol: 1, type: "close-request" },
+      },
+      {
+        origin: service,
+        source,
+        data: { source: "bugbeacon", protocol: 2, type: "close-request" },
+      },
+      {
+        origin: service,
+        source,
+        data: { source: "bugbeacon", protocol: 1, type: "close-request", extra: true },
+      },
+      {
+        origin: "https://attacker.example",
+        source,
+        data: { source: "bugbeacon", protocol: 1, type: "resize", height: 120 },
+      },
+      {
+        origin: service,
+        source,
+        data: { source: "bugbeacon", protocol: 1, type: "resize", height: 120, extra: true },
+      },
+      { origin: "null", source, data: { source: "bugbeacon", protocol: 1, type: "close-request" } },
+    ];
+    for (const { source: frame, ...init } of candidates) {
+      const event = new MessageEvent("message", init);
+      Object.defineProperty(event, "source", { value: frame });
+      window.dispatchEvent(event);
+    }
+  }, serviceOrigin);
+  await expect(page.getByRole("dialog")).toBeVisible();
+  await expect(page.locator("iframe")).toHaveJSProperty("style.height", "480px");
+});
+
+test("dialog closes from the shell when the iframe never loads", async ({ page }) => {
+  await mount(page, { embed: "abort" });
+  const trigger = page.getByRole("button", { name: "Report Bug", exact: true });
+  const dialog = page.getByRole("dialog");
+  await trigger.click();
+  await expect(dialog).toBeVisible();
+  await expect(page.getByRole("button", { name: "Close", exact: true })).toHaveCount(1);
+  await expect(page.locator("iframe")).toHaveCount(1);
+  await page.getByRole("button", { name: "Close", exact: true }).click();
+  await expect(dialog).toBeHidden();
+  await expect(trigger).toBeFocused();
+  await trigger.click();
+  await page.keyboard.press("Escape");
+  await expect(dialog).toBeHidden();
+  await expect(trigger).toBeFocused();
+  await trigger.click();
+  await expect(dialog).toBeVisible();
+  await page.mouse.click(2, 2);
+  await expect(dialog).toBeHidden();
+  await expect(trigger).toBeFocused();
 });
 
 test("mobile dialog keeps Close visible without horizontal overflow", async ({ page }) => {

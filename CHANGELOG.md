@@ -6,6 +6,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Added
+
+- SDK-owned dialog shell with one Close button, overlay, Escape, focus trap, and backdrop click. Close works when the iframe never loads.
+- Embed protocol 1: `ready`, `handshake`, `theme`, `resize`, `close-request`, and `submitted`, plus optional theme attributes.
+- Legacy `bugbeacon:ready`, `bugbeacon:init`, and `bugbeacon:close` messages still work.
+
 ## [0.1.0] - 2026-09-29
 
 ### Added
