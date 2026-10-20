@@ -22,21 +22,50 @@ import {
 const vectors = JSON.parse(
   readFileSync(new URL("./fixtures/embed-protocol.json", import.meta.url), "utf8"),
 ) as {
-  valid: { name: string; data: unknown; parsed: unknown }[];
-  invalid: { name: string; data: unknown }[];
-  wrongWindow: { origin: string; expectedOrigin: string; data: unknown };
-  unknownProtocol: { data: unknown; fallback: unknown };
+  messages: {
+    name: string;
+    product: string;
+    data: Record<string, unknown>;
+    kind: string | null;
+  }[];
+  parent: {
+    name: string;
+    product: string;
+    data: unknown;
+    origin: string;
+    parentOrigin: string;
+    sourceIsParent: boolean;
+    framed: boolean;
+    hidesClose: boolean;
+  }[];
 };
+
+function bugbeaconMessages() {
+  return vectors.messages.filter((vector) => vector.product === "bugbeacon");
+}
+
+function parsedHostMessage(vector: { data: Record<string, unknown>; kind: string | null }) {
+  if (vector.kind === "resize") return { kind: "resize", height: vector.data.height };
+  if (vector.kind === "ready" || vector.kind === "close-request" || vector.kind === "submitted") {
+    return { kind: vector.kind };
+  }
+  return null;
+}
 
 const frame = {};
 const origin = "https://service.example";
 
 describe("parseHostMessage", () => {
-  it("accepts every valid vector and rejects every invalid vector", () => {
-    for (const vector of vectors.valid) {
-      assert.deepEqual(parseHostMessage(vector.data), vector.parsed, vector.name);
+  it("follows the shipyard message vectors for bugbeacon", () => {
+    const handshake = bugbeaconMessages().find((vector) => vector.kind === "handshake");
+    const theme = bugbeaconMessages().find((vector) => vector.kind === "theme");
+    assert.deepEqual(handshakeMessage(), handshake?.data);
+    assert.deepEqual(themeMessage(defaultTheme), theme?.data);
+    for (const vector of bugbeaconMessages()) {
+      if (vector.kind === "handshake" || vector.kind === "theme") continue;
+      assert.deepEqual(parseHostMessage(vector.data), parsedHostMessage(vector), vector.name);
     }
-    for (const vector of vectors.invalid) {
+    for (const vector of vectors.messages.filter((item) => item.product !== "bugbeacon")) {
       assert.equal(parseHostMessage(vector.data), null, vector.name);
     }
     assert.equal(parseHostMessage(Object.create(null)), null);
@@ -44,12 +73,15 @@ describe("parseHostMessage", () => {
   });
 
   it("ignores protocol 2 and still accepts the legacy fallback", () => {
-    assert.equal(parseHostMessage(vectors.unknownProtocol.data), null);
-    assert.deepEqual(parseHostMessage(vectors.unknownProtocol.fallback), { kind: "legacy-close" });
-    assert.equal(
-      vectors.invalid.some((vector) => vector.name === "protocol-2"),
-      true,
-    );
+    const protocolTwo = bugbeaconMessages().find((vector) => vector.name === "protocol 2");
+    assert.equal(protocolTwo?.kind, null);
+    assert.equal(parseHostMessage(protocolTwo?.data), null);
+    assert.deepEqual(parseHostMessage({ type: "bugbeacon:close", version: 1 }), {
+      kind: "legacy-close",
+    });
+    const shortest = bugbeaconMessages().find((vector) => vector.name === "resize min height");
+    assert.deepEqual(parseHostMessage(shortest?.data), { kind: "resize", height: minWireHeight });
+    assert.equal(clampFrameHeight(minWireHeight), minFrameHeight);
   });
 });
 
@@ -65,10 +97,22 @@ describe("isEmbedMessageSource", () => {
 
   it("rejects a different window on the endpoint origin", () => {
     const otherWindow = {};
-    const { origin: messageOrigin, expectedOrigin, data } = vectors.wrongWindow;
-    assert.deepEqual(parseHostMessage(data), { kind: "close-request" });
-    assert.equal(isEmbedMessageSource(messageOrigin, otherWindow, expectedOrigin, frame), false);
-    assert.equal(isEmbedMessageSource(messageOrigin, frame, expectedOrigin, frame), true);
+    for (const vector of vectors.parent.filter((item) => item.product === "bugbeacon")) {
+      const source = vector.sourceIsParent ? frame : otherWindow;
+      const sameWindowAndOrigin =
+        vector.sourceIsParent &&
+        vector.origin === vector.parentOrigin &&
+        vector.origin !== "null" &&
+        vector.origin.length > 0;
+      assert.equal(
+        isEmbedMessageSource(vector.origin, source, vector.parentOrigin, frame),
+        sameWindowAndOrigin,
+        vector.name,
+      );
+    }
+    const wrongWindow = vectors.parent.find((vector) => vector.name === "wrong window");
+    assert.equal(wrongWindow?.sourceIsParent, false);
+    assert.equal(wrongWindow?.hidesClose, false);
   });
 });
 
@@ -127,7 +171,8 @@ describe("theme and embed url", () => {
     assert.equal(published.maxFrameHeight, maxFrameHeight);
     assert.equal(published.labelMax, labelMax);
     assert.equal(typeof published.parseHostMessage, "function");
-    assert.equal(published.parseHostMessage(vectors.unknownProtocol.data), null);
+    const protocolTwo = bugbeaconMessages().find((vector) => vector.name === "protocol 2");
+    assert.equal(published.parseHostMessage(protocolTwo?.data), null);
   });
 
   it("falls back when theme attributes are invalid", () => {

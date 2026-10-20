@@ -1,4 +1,10 @@
 {
   "$schema": "./node_modules/oxfmt/configuration_schema.json",
-  "ignorePatterns": ["dist/**", "package-lock.json", "test-results/**", "playwright-report/**"]
+  "ignorePatterns": [
+    "dist/**",
+    "package-lock.json",
+    "test-results/**",
+    "playwright-report/**",
+    "tests/fixtures/embed-protocol.json"
+  ]
 }
