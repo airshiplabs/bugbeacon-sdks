@@ -367,7 +367,13 @@ test("theme updates after ready are sent again and invalid accents stay default"
     "data-initialized",
     "true",
   );
-  expect(messages[1]).toMatchObject({ type: "theme", accent: "#365fe8", colorScheme: "light" });
+  await expect
+    .poll(() => messages[1])
+    .toMatchObject({
+      type: "theme",
+      accent: "#365fe8",
+      colorScheme: "light",
+    });
   await page.locator("bug-beacon").evaluate((widget) => {
     widget.setAttribute("accent", "#112233");
     widget.setAttribute("color-scheme", "dark");

@@ -212,6 +212,7 @@ var BugBeacon = (() => {
       origin = null;
       theme = defaultTheme;
       protocolReady = false;
+      themeQueued = false;
       constructor() {
         super();
         const root = this.attachShadow({ mode: "open" });
@@ -294,8 +295,13 @@ var BugBeacon = (() => {
         this.postToFrame(handshakeMessage());
       }
       postTheme() {
-        if (!this.protocolReady) return;
-        this.postToFrame(themeMessage(this.theme));
+        if (!this.protocolReady || this.themeQueued) return;
+        this.themeQueued = true;
+        queueMicrotask(() => {
+          this.themeQueued = false;
+          if (!this.protocolReady) return;
+          this.postToFrame(themeMessage(this.theme));
+        });
       }
       receiveMessage = (event) => {
         if (!this.origin || !isEmbedMessageSource(
@@ -351,6 +357,7 @@ var BugBeacon = (() => {
         this.iframe?.remove();
         this.iframe = null;
         this.protocolReady = false;
+        this.themeQueued = false;
         this.dialog.querySelector(".focus-guard")?.remove();
       }
     }

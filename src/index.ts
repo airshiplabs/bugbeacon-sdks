@@ -118,6 +118,7 @@ export function defineBugBeacon(): void {
     private origin: string | null = null;
     private theme: Theme = defaultTheme;
     private protocolReady = false;
+    private themeQueued = false;
 
     constructor() {
       super();
@@ -213,8 +214,13 @@ export function defineBugBeacon(): void {
     }
 
     private postTheme(): void {
-      if (!this.protocolReady) return;
-      this.postToFrame(themeMessage(this.theme));
+      if (!this.protocolReady || this.themeQueued) return;
+      this.themeQueued = true;
+      queueMicrotask(() => {
+        this.themeQueued = false;
+        if (!this.protocolReady) return;
+        this.postToFrame(themeMessage(this.theme));
+      });
     }
 
     private receiveMessage = (event: MessageEvent): void => {
@@ -281,6 +287,7 @@ export function defineBugBeacon(): void {
       this.iframe?.remove();
       this.iframe = null;
       this.protocolReady = false;
+      this.themeQueued = false;
       this.dialog.querySelector(".focus-guard")?.remove();
     }
   }
