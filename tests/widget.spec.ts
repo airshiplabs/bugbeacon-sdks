@@ -6,9 +6,9 @@ const serviceOrigin = "https://service.example";
 const hostOrigin = "https://host.example";
 const bundle = await readFile(new URL("../dist/bugbeacon.js", import.meta.url), "utf8");
 
-function embedDocument(host: string, mode: "legacy" | "protocol"): string {
+function embedDocument(host: string, mode: "legacy" | "protocol" | "quiet"): string {
   const target = JSON.stringify(host);
-  if (mode === "protocol") {
+  if (mode === "protocol" || mode === "quiet") {
     return `<!doctype html><html><body><label>Title<input></label><button id="hosted-close">Close</button><button id="close">Done</button><button id="send">Send</button><script>
       window.addEventListener('message', event => {
         if (event.origin === ${target} && event.source === parent) {
@@ -19,8 +19,12 @@ function embedDocument(host: string, mode: "legacy" | "protocol"): string {
           }
         }
       });
-      parent.postMessage({ source: 'bugbeacon', protocol: 1, type: 'ready' }, ${target});
-      parent.postMessage({ source: 'bugbeacon', protocol: 1, type: 'resize', height: 480 }, ${target});
+      ${
+        mode === "quiet"
+          ? ""
+          : `parent.postMessage({ source: 'bugbeacon', protocol: 1, type: 'ready' }, ${target});
+      parent.postMessage({ source: 'bugbeacon', protocol: 1, type: 'resize', height: 480 }, ${target});`
+      }
       document.querySelector('#close').onclick = () => parent.postMessage({ source: 'bugbeacon', protocol: 1, type: 'close-request' }, ${target});
       document.querySelector('#send').onclick = () => parent.postMessage({ source: 'bugbeacon', protocol: 1, type: 'submitted' }, ${target});
     </script></body></html>`;
@@ -46,7 +50,7 @@ async function mount(
     endpoint?: string;
     host?: string;
     count?: number;
-    mode?: "legacy" | "protocol";
+    mode?: "legacy" | "protocol" | "quiet";
     embed?: "load" | "abort";
     attributes?: string;
   } = {},
@@ -542,6 +546,31 @@ test("protocol 2 is ignored and a legacy close still works", async ({ page }) =>
   await post({ origin: serviceOrigin, data: { type: "bugbeacon:close", version: 1 } });
   await expect(page.getByRole("dialog")).toBeHidden();
   await expect(trigger).toBeFocused();
+});
+
+test("resize waits for the handshake and short heights are raised to 100px", async ({ page }) => {
+  const { messages } = await mount(page, { mode: "quiet" });
+  await page.getByRole("button", { name: "Report Bug", exact: true }).click();
+  await expect(page.locator("iframe")).toBeVisible();
+  const post = (data: unknown) =>
+    page.evaluate(
+      (payload) => {
+        const source = document
+          .querySelector("bug-beacon")!
+          .shadowRoot!.querySelector("iframe")!.contentWindow;
+        const event = new MessageEvent("message", { origin: payload.origin, data: payload.data });
+        Object.defineProperty(event, "source", { value: source });
+        window.dispatchEvent(event);
+      },
+      { origin: serviceOrigin, data },
+    );
+  await post({ source: "bugbeacon", protocol: 1, type: "resize", height: 40 });
+  await expect(page.locator("iframe")).toHaveJSProperty("style.height", "");
+  await post({ source: "bugbeacon", protocol: 1, type: "ready" });
+  await expect.poll(() => messages[0]).toMatchObject({ type: "handshake", embed: true });
+  await expect(page.locator("iframe")).toHaveJSProperty("style.height", "100px");
+  await post({ source: "bugbeacon", protocol: 1, type: "resize", height: 480 });
+  await expect(page.locator("iframe")).toHaveJSProperty("style.height", "480px");
 });
 
 test("mobile dialog keeps Close visible without horizontal overflow", async ({ page }) => {

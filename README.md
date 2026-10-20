@@ -47,7 +47,7 @@ The dialog shell (overlay, the only Close button, Escape, focus trap, and backdr
 
 Import the shared parser from `@bugbeacon/browser/protocol` (`parseHostMessage`, `protocolVersion`, `minFrameHeight`, `maxFrameHeight`, `labelMax`). The hosted form should use that module instead of re-declaring the types.
 
-Messages use `postMessage` and are accepted only from the iframe window on the `endpoint` origin. Each message is a plain object with exact keys.
+Messages use `postMessage` and are accepted only from the iframe window on the `endpoint` origin. Each message is a plain object with exact keys. Messages with extra keys are rejected.
 
 Parent to form, after the form sends `ready`:
 
@@ -81,7 +81,7 @@ Form to parent:
 { "source": "bugbeacon", "protocol": 1, "type": "resize", "height": 480 }
 ```
 
-`height` is an integer CSS pixel count from 100 to 4096, the same range as the iframe's `min-height`. The iframe uses that height and does not scroll itself.
+`height` is an integer CSS pixel count from 1 to 4096. The iframe does not scroll itself. A height under 100 is still accepted, and the SDK raises the iframe to 100px. It does not reject that message.
 
 ```json
 { "source": "bugbeacon", "protocol": 1, "type": "close-request" }
@@ -99,7 +99,9 @@ Legacy 0.1.0 messages still work. The form sends `{ "type": "bugbeacon:ready", "
 
 ## Version negotiation
 
-`handshake.protocol` is the only version this SDK speaks, which is `1`. A message with any other `protocol` number is ignored. The dialog stays open, and `resize` or `close-request` at that version does nothing. If the form also sends a legacy `bugbeacon:ready` or `bugbeacon:close` message with `version: 1`, that message still works. That is the fallback.
+The handshake `protocol` number is the highest version the page speaks. This SDK speaks `1`. A message with a higher `protocol` number is ignored. The dialog stays open, and `resize` or `close-request` at that version does nothing. If the form also sends a legacy `bugbeacon:ready` or `bugbeacon:close` message with `version: 1`, that message still works. That is the fallback.
+
+`resize` is applied only after that handshake. A `resize` that arrives first is kept and used once `ready` has been answered.
 
 ## Optional channel
 

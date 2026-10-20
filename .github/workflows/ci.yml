@@ -22,6 +22,7 @@ jobs:
       - run: npm run lint
       - run: npm run typecheck
       - run: npm test
+      - run: node scripts/check-vector-drift.mjs
       - run: git diff --exit-code -- dist
       - run: npm audit
       - run: npm pack --dry-run

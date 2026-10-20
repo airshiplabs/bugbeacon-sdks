@@ -2,6 +2,9 @@
 
 export const protocolVersion = 1;
 export const messageSource = "bugbeacon";
+/** Smallest height the wire format accepts. The iframe is then raised to `minFrameHeight`. */
+export const minWireHeight = 1;
+/** Smallest height applied to the iframe. Shorter accepted messages are raised to this. */
 export const minFrameHeight = 100;
 export const maxFrameHeight = 4096;
 export const labelMax = 60;
@@ -50,9 +53,14 @@ function validHeight(value: unknown): value is number {
   return (
     typeof value === "number" &&
     Number.isInteger(value) &&
-    value >= minFrameHeight &&
+    value >= minWireHeight &&
     value <= maxFrameHeight
   );
+}
+
+/** Iframe height for an accepted resize. Values under 100px are raised, not rejected. */
+export function clampFrameHeight(height: number): number {
+  return Math.max(minFrameHeight, height);
 }
 
 function hasControlCharacter(value: string): boolean {

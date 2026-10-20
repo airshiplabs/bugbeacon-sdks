@@ -236,7 +236,7 @@ On the **host page** CSP:
 
 The iframe loads BugBeacon’s embed document and form; challenge and API requests run inside that document’s origin. The parent widget only uses `postMessage` with the configured `endpoint` origin.
 
-Protocol 1 messages are plain objects with exact keys. The form sends `ready`, `resize` (`height` integer 100–4096), `close-request`, and `submitted`. An unknown `protocol` number is ignored, and legacy `version: 1` messages still work. See the README for that rule and for the optional `channel` id. After `ready`, the SDK sends `handshake` (`embed: true`) and then `theme` (`accent`, `colorScheme`, `labels`). See [README](README.md) for the JSON shapes.
+Protocol 1 messages are plain objects with exact keys. Messages with extra keys are rejected. The form sends `ready`, `resize` (`height` integer 1–4096; the iframe is raised to 100px when the value is smaller), `close-request`, and `submitted`. The handshake `protocol` number is the highest version the page speaks. An unknown `protocol` number is ignored, and legacy `version: 1` messages still work. See the README for that rule and for the optional `channel` id. After `ready`, the SDK sends `handshake` (`embed: true`) and then `theme` (`accent`, `colorScheme`, `labels`). See [README](README.md) for the JSON shapes.
 
 Legacy messages still work: form `bugbeacon:ready` (`version: 1`), SDK reply `bugbeacon:init` (`version: 1`), form `bugbeacon:close` (`version: 1`).
 

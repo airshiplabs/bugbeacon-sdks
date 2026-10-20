@@ -1,6 +1,9 @@
 /** Wire protocol shared by the SDK and the hosted form. Version 1. */
 export declare const protocolVersion = 1;
 export declare const messageSource = "bugbeacon";
+/** Smallest height the wire format accepts. The iframe is then raised to `minFrameHeight`. */
+export declare const minWireHeight = 1;
+/** Smallest height applied to the iframe. Shorter accepted messages are raised to this. */
 export declare const minFrameHeight = 100;
 export declare const maxFrameHeight = 4096;
 export declare const labelMax = 60;
@@ -30,6 +33,8 @@ export type HostMessage = {
 } | {
     kind: "submitted";
 };
+/** Iframe height for an accepted resize. Values under 100px are raised, not rejected. */
+export declare function clampFrameHeight(height: number): number;
 /** Theme from host attributes. Invalid optional values fall back to BugBeacon defaults. */
 export declare function themeFromAttributes(read: (name: string) => string | null): Theme;
 /** Query string for the embed document. Theme is never placed here. */

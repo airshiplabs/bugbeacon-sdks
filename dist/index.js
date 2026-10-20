@@ -15,6 +15,7 @@ function endpointOrigin(value, host) {
 
 // src/index.ts
 import {
+  clampFrameHeight,
   defaultTheme,
   embedUrl,
   handshakeMessage,
@@ -101,6 +102,7 @@ function defineBugBeacon() {
     theme = defaultTheme;
     protocolReady = false;
     themeQueued = false;
+    pendingHeight = null;
     constructor() {
       super();
       const root = this.attachShadow({ mode: "open" });
@@ -182,6 +184,15 @@ function defineBugBeacon() {
     postHandshake() {
       this.postToFrame(handshakeMessage());
     }
+    applyFrameHeight(height) {
+      if (!this.iframe) return;
+      this.iframe.style.height = `${clampFrameHeight(height)}px`;
+    }
+    flushPendingHeight() {
+      if (this.pendingHeight === null) return;
+      this.applyFrameHeight(this.pendingHeight);
+      this.pendingHeight = null;
+    }
     postTheme() {
       if (!this.protocolReady || this.themeQueued) return;
       this.themeQueued = true;
@@ -207,10 +218,12 @@ function defineBugBeacon() {
         this.protocolReady = true;
         this.postHandshake();
         this.postTheme();
+        this.flushPendingHeight();
       } else if (message.kind === "legacy-close" || message.kind === "close-request") {
         this.close();
-      } else if (message.kind === "resize" && this.iframe) {
-        this.iframe.style.height = `${message.height}px`;
+      } else if (message.kind === "resize") {
+        if (!this.protocolReady) this.pendingHeight = message.height;
+        else this.applyFrameHeight(message.height);
       } else if (message.kind === "submitted") {
         this.status.textContent = submittedStatus;
       }
@@ -246,6 +259,7 @@ function defineBugBeacon() {
       this.iframe = null;
       this.protocolReady = false;
       this.themeQueued = false;
+      this.pendingHeight = null;
       this.dialog.querySelector(".focus-guard")?.remove();
     }
   }

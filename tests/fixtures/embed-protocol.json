@@ -12,6 +12,16 @@
     },
     {
       "name": "resize-min",
+      "data": { "source": "bugbeacon", "protocol": 1, "type": "resize", "height": 1 },
+      "parsed": { "kind": "resize", "height": 1 }
+    },
+    {
+      "name": "resize-below-frame-min",
+      "data": { "source": "bugbeacon", "protocol": 1, "type": "resize", "height": 99 },
+      "parsed": { "kind": "resize", "height": 99 }
+    },
+    {
+      "name": "resize-frame-min",
       "data": { "source": "bugbeacon", "protocol": 1, "type": "resize", "height": 100 },
       "parsed": { "kind": "resize", "height": 100 }
     },
@@ -57,10 +67,6 @@
     {
       "name": "extra-field",
       "data": { "source": "bugbeacon", "protocol": 1, "type": "ready", "embed": true }
-    },
-    {
-      "name": "resize-below-min",
-      "data": { "source": "bugbeacon", "protocol": 1, "type": "resize", "height": 99 }
     },
     {
       "name": "resize-zero",

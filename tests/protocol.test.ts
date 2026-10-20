@@ -5,12 +5,14 @@ import {
   defaultTheme,
   embedSearch,
   embedUrl,
+  clampFrameHeight,
   handshakeMessage,
   isEmbedMessageSource,
   labelMax,
   legacyInitMessage,
   maxFrameHeight,
   minFrameHeight,
+  minWireHeight,
   parseHostMessage,
   protocolVersion,
   themeFromAttributes,
@@ -112,9 +114,16 @@ describe("theme and embed url", () => {
   });
 
   it("publishes the protocol constants from the built subpath", async () => {
+    assert.equal(clampFrameHeight(1), minFrameHeight);
+    assert.equal(clampFrameHeight(99), 100);
+    assert.equal(clampFrameHeight(480), 480);
     const published = await import("../dist/protocol.js");
     assert.equal(published.protocolVersion, protocolVersion);
+    assert.equal(published.minWireHeight, minWireHeight);
     assert.equal(published.minFrameHeight, minFrameHeight);
+    assert.equal(published.clampFrameHeight(1), 100);
+    assert.equal(published.clampFrameHeight(99), 100);
+    assert.equal(published.clampFrameHeight(480), 480);
     assert.equal(published.maxFrameHeight, maxFrameHeight);
     assert.equal(published.labelMax, labelMax);
     assert.equal(typeof published.parseHostMessage, "function");

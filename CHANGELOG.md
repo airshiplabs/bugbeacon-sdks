@@ -12,7 +12,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - Embed protocol 1: `ready`, `handshake`, `theme`, `resize`, `close-request`, and `submitted`, plus optional theme attributes.
 - Legacy `bugbeacon:ready`, `bugbeacon:init`, and `bugbeacon:close` messages still work. TODO(Matthew): set the 0.1.0 sunset date.
 - Public `@bugbeacon/browser/protocol` export for the shared message types, constants, and parser.
-- Resize heights below 100 pixels are rejected, matching the iframe `min-height`.
+- Resize heights from 1 to 4096 are accepted. The iframe is raised to 100px when the message is shorter.
+- `resize` is applied after the handshake. An earlier `resize` is kept until `ready`.
 - HTTP endpoints are limited to hostname `localhost` when the page hostname is also `localhost`.
 
 ## [0.1.0] - 2026-09-29

@@ -41,6 +41,7 @@ var BugBeacon = (() => {
   // src/protocol.ts
   var protocolVersion = 1;
   var messageSource = "bugbeacon";
+  var minWireHeight = 1;
   var minFrameHeight = 100;
   var maxFrameHeight = 4096;
   var labelMax = 60;
@@ -61,7 +62,10 @@ var BugBeacon = (() => {
     return value;
   }
   function validHeight(value) {
-    return typeof value === "number" && Number.isInteger(value) && value >= minFrameHeight && value <= maxFrameHeight;
+    return typeof value === "number" && Number.isInteger(value) && value >= minWireHeight && value <= maxFrameHeight;
+  }
+  function clampFrameHeight(height) {
+    return Math.max(minFrameHeight, height);
   }
   function hasControlCharacter(value) {
     for (let index = 0; index < value.length; index += 1) {
@@ -213,6 +217,7 @@ var BugBeacon = (() => {
       theme = defaultTheme;
       protocolReady = false;
       themeQueued = false;
+      pendingHeight = null;
       constructor() {
         super();
         const root = this.attachShadow({ mode: "open" });
@@ -294,6 +299,15 @@ var BugBeacon = (() => {
       postHandshake() {
         this.postToFrame(handshakeMessage());
       }
+      applyFrameHeight(height) {
+        if (!this.iframe) return;
+        this.iframe.style.height = `${clampFrameHeight(height)}px`;
+      }
+      flushPendingHeight() {
+        if (this.pendingHeight === null) return;
+        this.applyFrameHeight(this.pendingHeight);
+        this.pendingHeight = null;
+      }
       postTheme() {
         if (!this.protocolReady || this.themeQueued) return;
         this.themeQueued = true;
@@ -319,10 +333,12 @@ var BugBeacon = (() => {
           this.protocolReady = true;
           this.postHandshake();
           this.postTheme();
+          this.flushPendingHeight();
         } else if (message.kind === "legacy-close" || message.kind === "close-request") {
           this.close();
-        } else if (message.kind === "resize" && this.iframe) {
-          this.iframe.style.height = `${message.height}px`;
+        } else if (message.kind === "resize") {
+          if (!this.protocolReady) this.pendingHeight = message.height;
+          else this.applyFrameHeight(message.height);
         } else if (message.kind === "submitted") {
           this.status.textContent = submittedStatus;
         }
@@ -358,6 +374,7 @@ var BugBeacon = (() => {
         this.iframe = null;
         this.protocolReady = false;
         this.themeQueued = false;
+        this.pendingHeight = null;
         this.dialog.querySelector(".focus-guard")?.remove();
       }
     }

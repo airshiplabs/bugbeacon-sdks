@@ -3,6 +3,7 @@
 // src/protocol.ts
 var protocolVersion = 1;
 var messageSource = "bugbeacon";
+var minWireHeight = 1;
 var minFrameHeight = 100;
 var maxFrameHeight = 4096;
 var labelMax = 60;
@@ -23,7 +24,10 @@ function plainRecord(value) {
   return value;
 }
 function validHeight(value) {
-  return typeof value === "number" && Number.isInteger(value) && value >= minFrameHeight && value <= maxFrameHeight;
+  return typeof value === "number" && Number.isInteger(value) && value >= minWireHeight && value <= maxFrameHeight;
+}
+function clampFrameHeight(height) {
+  return Math.max(minFrameHeight, height);
 }
 function hasControlCharacter(value) {
   for (let index = 0; index < value.length; index += 1) {
@@ -97,6 +101,7 @@ function parseHostMessage(data) {
   return null;
 }
 export {
+  clampFrameHeight,
   defaultTheme,
   embedSearch,
   embedUrl,
@@ -107,6 +112,7 @@ export {
   maxFrameHeight,
   messageSource,
   minFrameHeight,
+  minWireHeight,
   parseHostMessage,
   protocolVersion,
   themeFromAttributes,

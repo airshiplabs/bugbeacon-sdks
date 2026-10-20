@@ -1,5 +1,6 @@
 import { endpointOrigin } from "./endpoint";
 import {
+  clampFrameHeight,
   defaultTheme,
   embedUrl,
   handshakeMessage,
@@ -96,6 +97,7 @@ export function defineBugBeacon(): void {
     private theme: Theme = defaultTheme;
     private protocolReady = false;
     private themeQueued = false;
+    private pendingHeight: number | null = null;
 
     constructor() {
       super();
@@ -190,6 +192,17 @@ export function defineBugBeacon(): void {
       this.postToFrame(handshakeMessage());
     }
 
+    private applyFrameHeight(height: number): void {
+      if (!this.iframe) return;
+      this.iframe.style.height = `${clampFrameHeight(height)}px`;
+    }
+
+    private flushPendingHeight(): void {
+      if (this.pendingHeight === null) return;
+      this.applyFrameHeight(this.pendingHeight);
+      this.pendingHeight = null;
+    }
+
     private postTheme(): void {
       if (!this.protocolReady || this.themeQueued) return;
       this.themeQueued = true;
@@ -219,10 +232,12 @@ export function defineBugBeacon(): void {
         this.protocolReady = true;
         this.postHandshake();
         this.postTheme();
+        this.flushPendingHeight();
       } else if (message.kind === "legacy-close" || message.kind === "close-request") {
         this.close();
-      } else if (message.kind === "resize" && this.iframe) {
-        this.iframe.style.height = `${message.height}px`;
+      } else if (message.kind === "resize") {
+        if (!this.protocolReady) this.pendingHeight = message.height;
+        else this.applyFrameHeight(message.height);
       } else if (message.kind === "submitted") {
         this.status.textContent = submittedStatus;
       }
@@ -265,6 +280,7 @@ export function defineBugBeacon(): void {
       this.iframe = null;
       this.protocolReady = false;
       this.themeQueued = false;
+      this.pendingHeight = null;
       this.dialog.querySelector(".focus-guard")?.remove();
     }
   }
