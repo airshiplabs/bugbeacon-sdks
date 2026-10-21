@@ -1,4 +1,4 @@
-/*! @bugbeacon/browser v0.1.0 | MIT License | https://github.com/airshiplabs/bugbeacon-sdks */
+/*! @bugbeacon/browser v0.2.0 | MIT License | https://github.com/airshiplabs/bugbeacon-sdks */
 
 // src/endpoint.ts
 function endpointOrigin(value, host) {
