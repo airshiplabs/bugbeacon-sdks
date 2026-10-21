@@ -60,12 +60,14 @@ describe("parseHostMessage", () => {
     const theme = bugbeaconMessages().find((vector) => vector.kind === "theme");
     assert.deepEqual(handshakeMessage(), handshake?.data);
     assert.deepEqual(themeMessage(defaultTheme), theme?.data);
-    for (const vector of bugbeaconMessages()) {
+    for (const vector of vectors.messages) {
+      const fountainOnly = vector.kind === "refresh-request" || vector.kind === "session";
+      if (vector.product !== "bugbeacon" || fountainOnly) {
+        assert.equal(parseHostMessage(vector.data), null, vector.name);
+        continue;
+      }
       if (vector.kind === "handshake" || vector.kind === "theme") continue;
       assert.deepEqual(parseHostMessage(vector.data), parsedHostMessage(vector), vector.name);
-    }
-    for (const vector of vectors.messages.filter((item) => item.product !== "bugbeacon")) {
-      assert.equal(parseHostMessage(vector.data), null, vector.name);
     }
     assert.equal(parseHostMessage(Object.create(null)), null);
     assert.equal(parseHostMessage({ type: "bugbeacon:close", version: 1 }), null);
