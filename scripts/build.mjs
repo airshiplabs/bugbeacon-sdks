@@ -16,9 +16,26 @@ const shared = {
 
 await build({
   ...shared,
+  entryPoints: ["src/protocol.ts"],
+  outfile: "dist/protocol.js",
+  format: "esm",
+});
+await build({
+  ...shared,
   entryPoints: ["src/index.ts"],
   outfile: "dist/index.js",
   format: "esm",
+  plugins: [
+    {
+      name: "protocol-external",
+      setup(build) {
+        build.onResolve({ filter: /^\.\/protocol$/ }, () => ({
+          path: "./protocol.js",
+          external: true,
+        }));
+      },
+    },
+  ],
 });
 await build({
   ...shared,

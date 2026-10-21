@@ -67,19 +67,30 @@ The element observes only these attributes (see `src/index.ts`):
 **`endpoint` rules:**
 
 - Must be a valid origin: scheme + host + optional port only (`pathname` must be `/`, no `username`, `password`, `search`, or `hash`).
-- **HTTPS** in production.
-- **HTTP** only for loopback development when **both** the BugBeacon service and the host page use loopback hostnames (`localhost`, `127.*`, or `::1`).
+- **HTTPS** is required. The value is parsed with `new URL` and stored as `url.origin`.
+- **HTTP** is allowed only when the endpoint hostname and the host page hostname are both exactly `localhost`. `127.0.0.1` and `::1` are not accepted for HTTP.
 - Invalid `project-id` or `endpoint` disables the button and shows: _Bug reporting is unavailable. Check the widget configuration._
 
-There are no other element attributes, properties, or slots in this SDK.
+Optional theme attributes (all fall back to BugBeacon defaults when missing or invalid):
+
+| Attribute      | Default        | Value                                                       |
+| -------------- | -------------- | ----------------------------------------------------------- |
+| `label`        | `Report Bug`   | Trigger button text. 1–60 characters.                       |
+| `heading`      | `Report a bug` | Dialog title.                                               |
+| `close-label`  | `Close`        | The SDK Close button. The dialog has one Close control.     |
+| `submit-label` | `Send report`  | Submit label sent to the hosted form.                       |
+| `accent`       | `#365fe8`      | `#rrggbb` hex. Applied to the trigger and sent to the form. |
+| `color-scheme` | `light`        | `light` or `dark`.                                          |
+
+There are no other element attributes, properties, or slots in this SDK. Theme values are sent in a `theme` message after the form is ready. They are not placed in the embed URL. Plan limits are enforced by the hosted form, not by this package.
 
 **Embed URL (when the button opens):**
 
 ```http
-{endpoint}/embed/{project-id}?origin={encodeURIComponent(window.location.origin)}
+{endpoint}/embed/{encodeURIComponent(project-id)}?origin={encodeURIComponent(window.location.origin)}&embed=1
 ```
 
-The widget sends only the public project ID and the parent page’s `window.location.origin` (not path, query, or hash). It does not attach application version or environment name; those are not part of this browser SDK.
+The widget sends only the public project ID (percent-encoded in the path), the parent page’s `window.location.origin` (not path, query, or hash), and `embed=1`. `embed=1` plus the handshake message tells the hosted form to hide its own close button. 0.2.0 replaces 0.1.0 embeds and does not accept the old messages. The widget does not attach application version or environment name.
 
 ### Environment variables (host app conventions)
 
@@ -223,7 +234,9 @@ On the **host page** CSP:
 | `script-src` | `https://bugbeacon.ai` when using the hosted widget script (or your origin if you self-host `bugbeacon.js`) |
 | `frame-src`  | The configured `endpoint` origin (for example `https://bugbeacon.ai`)                                       |
 
-The iframe loads BugBeacon’s embed document and form; challenge and API requests run inside that document’s origin. The parent widget only uses `postMessage` with the configured `endpoint` origin (`bugbeacon:ready`, `bugbeacon:init`, `bugbeacon:close`, protocol `version: 1`).
+The iframe loads BugBeacon’s embed document and form; challenge and API requests run inside that document’s origin. The parent widget only uses `postMessage` with the configured `endpoint` origin.
+
+Protocol 1 messages are plain objects with exact keys. Messages with extra keys are rejected. The form sends `ready`, `resize` (`height` integer 1–4096; the iframe is raised to 100px when the value is smaller), `close-request`, and `submitted`. The handshake `protocol` number is the highest version the page speaks. An unknown `protocol` number is ignored. 0.1.0 `bugbeacon:ready`, `bugbeacon:init`, and `bugbeacon:close` messages are not accepted. See the README for that rule and for the optional `channel` id. After `ready`, the SDK sends `handshake` (`embed: true`) and then `theme` (`accent`, `colorScheme`, `labels`). See [README](README.md) for the JSON shapes.
 
 ## GitHub and BugBeacon setup
 
@@ -269,7 +282,7 @@ Open `http://localhost:4100/examples/` and allow `http://localhost:4100` in BugB
 | Symptom                                                  | Likely cause                        | Fix                                                                                                                            |
 | -------------------------------------------------------- | ----------------------------------- | ------------------------------------------------------------------------------------------------------------------------------ |
 | Button disabled; “Bug reporting is unavailable…”         | Invalid `project-id` or `endpoint`  | Use a version-4 UUID and a bare origin (`https://bugbeacon.ai`). No path, query, or credentials.                               |
-| Button disabled on local HTTP                            | Non-loopback host or HTTPS mismatch | Use loopback for both host and `endpoint`, or use HTTPS in production.                                                         |
+| Button disabled on local HTTP                            | Page or endpoint is not `localhost` | Use `http://localhost` for both, or use HTTPS. `127.0.0.1` is not an HTTP exception.                                           |
 | Embed loads but submission fails or is rejected          | Origin not allowlisted              | Add the exact `window.location.origin` in BugBeacon application settings.                                                      |
 | Works on `localhost` but not `127.0.0.1` (or vice versa) | Origin mismatch                     | Allow the origin you actually use; they are not interchangeable.                                                               |
 | Blank or blocked iframe                                  | CSP `frame-src`                     | Allow the `endpoint` origin.                                                                                                   |

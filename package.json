@@ -29,6 +29,10 @@
     ".": {
       "types": "./dist/index.d.ts",
       "import": "./dist/index.js"
+    },
+    "./protocol": {
+      "types": "./dist/protocol.d.ts",
+      "import": "./dist/protocol.js"
     }
   },
   "publishConfig": {
@@ -42,8 +46,8 @@
     "lint:fix": "oxlint --fix .",
     "format": "oxfmt .",
     "format:check": "oxfmt --check .",
-    "test": "npm run build && playwright test",
-    "check": "npm run format:check && npm run lint && npm run typecheck && npm test"
+    "test": "npm run build && node --experimental-strip-types --test tests/*.test.ts && playwright test",
+    "check": "npm run format:check && npm run lint && npm run typecheck && node scripts/check-vector-hash.mjs && npm test"
   },
   "devDependencies": {
     "@playwright/test": "1.64.1",
