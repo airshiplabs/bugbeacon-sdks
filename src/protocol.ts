@@ -34,8 +34,6 @@ export const defaultTheme: Theme = {
 };
 
 export type HostMessage =
-  | { kind: "legacy-ready" }
-  | { kind: "legacy-close" }
   | { kind: "ready" }
   | { kind: "resize"; height: number }
   | { kind: "close-request" }
@@ -107,10 +105,6 @@ export function embedUrl(serviceOrigin: string, projectId: string, parentOrigin:
   return `${serviceOrigin}/embed/${encodeURIComponent(projectId)}?${embedSearch(parentOrigin)}`;
 }
 
-export function legacyInitMessage(): { type: "bugbeacon:init"; version: 1 } {
-  return { type: "bugbeacon:init", version: 1 };
-}
-
 export function handshakeMessage(): {
   source: typeof messageSource;
   protocol: typeof protocolVersion;
@@ -163,11 +157,6 @@ export function parseHostMessage(data: unknown): HostMessage | null {
   const message = plainRecord(data);
   if (!message) return null;
   const keys = Object.keys(message);
-  if (keys.length === 2 && message.version === 1) {
-    if (message.type === "bugbeacon:ready") return { kind: "legacy-ready" };
-    if (message.type === "bugbeacon:close") return { kind: "legacy-close" };
-    return null;
-  }
   if (message.source !== messageSource || message.protocol !== protocolVersion) return null;
   if (
     message.type === "ready" ||

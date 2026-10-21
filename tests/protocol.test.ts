@@ -9,7 +9,6 @@ import {
   handshakeMessage,
   isEmbedMessageSource,
   labelMax,
-  legacyInitMessage,
   maxFrameHeight,
   minFrameHeight,
   minWireHeight,
@@ -69,16 +68,15 @@ describe("parseHostMessage", () => {
       assert.equal(parseHostMessage(vector.data), null, vector.name);
     }
     assert.equal(parseHostMessage(Object.create(null)), null);
-    assert.deepEqual(legacyInitMessage(), { type: "bugbeacon:init", version: 1 });
+    assert.equal(parseHostMessage({ type: "bugbeacon:close", version: 1 }), null);
+    assert.equal(parseHostMessage({ type: "bugbeacon:ready", version: 1 }), null);
   });
 
-  it("ignores protocol 2 and still accepts the legacy fallback", () => {
+  it("ignores protocol 2 and rejects 0.1.0 messages", () => {
     const protocolTwo = bugbeaconMessages().find((vector) => vector.name === "protocol 2");
     assert.equal(protocolTwo?.kind, null);
     assert.equal(parseHostMessage(protocolTwo?.data), null);
-    assert.deepEqual(parseHostMessage({ type: "bugbeacon:close", version: 1 }), {
-      kind: "legacy-close",
-    });
+    assert.equal(parseHostMessage({ type: "bugbeacon:init", version: 1 }), null);
     const shortest = bugbeaconMessages().find((vector) => vector.name === "resize min height");
     assert.deepEqual(parseHostMessage(shortest?.data), { kind: "resize", height: minWireHeight });
     assert.equal(clampFrameHeight(minWireHeight), minFrameHeight);

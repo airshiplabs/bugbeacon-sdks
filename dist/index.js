@@ -20,7 +20,6 @@ import {
   embedUrl,
   handshakeMessage,
   isEmbedMessageSource,
-  legacyInitMessage,
   parseHostMessage,
   themeFromAttributes,
   themeMessage
@@ -212,14 +211,12 @@ function defineBugBeacon() {
         return;
       const message = parseHostMessage(event.data);
       if (!message) return;
-      if (message.kind === "legacy-ready") {
-        this.postToFrame(legacyInitMessage());
-      } else if (message.kind === "ready") {
+      if (message.kind === "ready") {
         this.protocolReady = true;
         this.postHandshake();
         this.postTheme();
         this.flushPendingHeight();
-      } else if (message.kind === "legacy-close" || message.kind === "close-request") {
+      } else if (message.kind === "close-request") {
         this.close();
       } else if (message.kind === "resize") {
         if (!this.protocolReady) this.pendingHeight = message.height;

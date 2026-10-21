@@ -20,10 +20,6 @@ export interface Theme {
 }
 export declare const defaultTheme: Theme;
 export type HostMessage = {
-    kind: "legacy-ready";
-} | {
-    kind: "legacy-close";
-} | {
     kind: "ready";
 } | {
     kind: "resize";
@@ -40,10 +36,6 @@ export declare function themeFromAttributes(read: (name: string) => string | nul
 /** Query string for the embed document. Theme is never placed here. */
 export declare function embedSearch(parentOrigin: string): string;
 export declare function embedUrl(serviceOrigin: string, projectId: string, parentOrigin: string): string;
-export declare function legacyInitMessage(): {
-    type: "bugbeacon:init";
-    version: 1;
-};
 export declare function handshakeMessage(): {
     source: typeof messageSource;
     protocol: typeof protocolVersion;

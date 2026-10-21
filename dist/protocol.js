@@ -63,9 +63,6 @@ function embedSearch(parentOrigin) {
 function embedUrl(serviceOrigin, projectId, parentOrigin) {
   return `${serviceOrigin}/embed/${encodeURIComponent(projectId)}?${embedSearch(parentOrigin)}`;
 }
-function legacyInitMessage() {
-  return { type: "bugbeacon:init", version: 1 };
-}
 function handshakeMessage() {
   return { source: messageSource, protocol: protocolVersion, type: "handshake", embed: true };
 }
@@ -86,11 +83,6 @@ function parseHostMessage(data) {
   const message = plainRecord(data);
   if (!message) return null;
   const keys = Object.keys(message);
-  if (keys.length === 2 && message.version === 1) {
-    if (message.type === "bugbeacon:ready") return { kind: "legacy-ready" };
-    if (message.type === "bugbeacon:close") return { kind: "legacy-close" };
-    return null;
-  }
   if (message.source !== messageSource || message.protocol !== protocolVersion) return null;
   if (message.type === "ready" || message.type === "close-request" || message.type === "submitted") {
     return keys.length === 3 ? { kind: message.type } : null;
@@ -108,7 +100,6 @@ export {
   handshakeMessage,
   isEmbedMessageSource,
   labelMax,
-  legacyInitMessage,
   maxFrameHeight,
   messageSource,
   minFrameHeight,

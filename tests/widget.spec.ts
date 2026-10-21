@@ -6,40 +6,28 @@ const serviceOrigin = "https://service.example";
 const hostOrigin = "https://host.example";
 const bundle = await readFile(new URL("../dist/bugbeacon.js", import.meta.url), "utf8");
 
-function embedDocument(host: string, mode: "legacy" | "protocol" | "quiet"): string {
+function embedDocument(host: string, mode: "protocol" | "quiet"): string {
   const target = JSON.stringify(host);
-  if (mode === "protocol" || mode === "quiet") {
-    return `<!doctype html><html><body><label>Title<input></label><button id="hosted-close">Close</button><button id="close">Done</button><button id="send">Send</button><script>
-      window.addEventListener('message', event => {
-        if (event.origin === ${target} && event.source === parent) {
-          window.recordMessage(event.data);
-          if (event.data && event.data.type === 'handshake' && event.data.embed === true) {
-            document.body.dataset.initialized = 'true';
-            document.querySelector('#hosted-close').hidden = true;
-          }
-        }
-      });
-      ${
-        mode === "quiet"
-          ? ""
-          : `parent.postMessage({ source: 'bugbeacon', protocol: 1, type: 'ready' }, ${target});
-      parent.postMessage({ source: 'bugbeacon', protocol: 1, type: 'resize', height: 480 }, ${target});`
-      }
-      document.querySelector('#close').onclick = () => parent.postMessage({ source: 'bugbeacon', protocol: 1, type: 'close-request' }, ${target});
-      document.querySelector('#send').onclick = () => parent.postMessage({ source: 'bugbeacon', protocol: 1, type: 'submitted' }, ${target});
-    </script></body></html>`;
-  }
-  return `<!doctype html><html><body><label>Title<input></label><button id="close">Done</button><script>
+  return `<!doctype html><html><body><label>Title<input></label><button id="hosted-close">Close</button><button id="close">Done</button><button id="send">Send</button><script>
     window.addEventListener('message', event => {
       if (event.origin === ${target} && event.source === parent) {
         window.recordMessage(event.data);
-        document.body.dataset.initialized = String(event.data.type === 'bugbeacon:init');
+        if (event.data && event.data.type === 'handshake' && event.data.embed === true) {
+          document.body.dataset.initialized = 'true';
+          document.querySelector('#hosted-close').hidden = true;
+        }
       }
     });
-    parent.postMessage({ type: 'bugbeacon:ready', version: 1 }, ${target});
-    document.querySelector('#close').onclick = () => parent.postMessage({ type: 'bugbeacon:close', version: 1 }, ${target});
+    ${
+      mode === "quiet"
+        ? ""
+        : `parent.postMessage({ source: 'bugbeacon', protocol: 1, type: 'ready' }, ${target});
+    parent.postMessage({ source: 'bugbeacon', protocol: 1, type: 'resize', height: 480 }, ${target});`
+    }
+    document.querySelector('#close').onclick = () => parent.postMessage({ source: 'bugbeacon', protocol: 1, type: 'close-request' }, ${target});
+    document.querySelector('#send').onclick = () => parent.postMessage({ source: 'bugbeacon', protocol: 1, type: 'submitted' }, ${target});
     window.addEventListener('keydown', event => {
-      if (event.key === 'Escape') parent.postMessage({ type: 'bugbeacon:close', version: 1 }, ${target});
+      if (event.key === 'Escape') parent.postMessage({ source: 'bugbeacon', protocol: 1, type: 'close-request' }, ${target});
     });
   </script></body></html>`;
 }
@@ -50,14 +38,14 @@ async function mount(
     endpoint?: string;
     host?: string;
     count?: number;
-    mode?: "legacy" | "protocol" | "quiet";
+    mode?: "protocol" | "quiet";
     embed?: "load" | "abort";
     attributes?: string;
   } = {},
 ) {
   const host = options.host ?? hostOrigin;
   const endpoint = options.endpoint ?? serviceOrigin;
-  const mode = options.mode ?? "legacy";
+  const mode = options.mode ?? "protocol";
   const attributes = options.attributes ?? "";
   const messages: unknown[] = [];
   const requests: { url: string; referer?: string }[] = [];
@@ -125,7 +113,24 @@ test("plain script registers once and embeds only the project and parent origin"
       referer: undefined,
     },
   ]);
-  expect(messages).toEqual([{ type: "bugbeacon:init", version: 1 }]);
+  await expect
+    .poll(() => messages)
+    .toEqual([
+      { source: "bugbeacon", protocol: 1, type: "handshake", embed: true },
+      {
+        source: "bugbeacon",
+        protocol: 1,
+        type: "theme",
+        accent: "#365fe8",
+        colorScheme: "light",
+        labels: {
+          trigger: "Report Bug",
+          title: "Report a bug",
+          close: "Close",
+          submit: "Send report",
+        },
+      },
+    ]);
   await expect(page.locator("iframe")).toHaveAttribute("title", "Report a bug");
 });
 
@@ -208,7 +213,7 @@ test("removal and reinsertion release the modal and retain one working listener"
     "data-initialized",
     "true",
   );
-  expect(messages).toHaveLength(2);
+  await expect.poll(() => messages.length).toBe(4);
 });
 
 test("multiple widgets accept messages only from their own frames", async ({ page }) => {
@@ -521,7 +526,7 @@ test("a sibling window on the endpoint origin cannot close the dialog", async ({
   await expect(page.getByRole("dialog")).toBeVisible();
 });
 
-test("protocol 2 is ignored and a legacy close still works", async ({ page }) => {
+test("protocol 2 and 0.1.0 close messages do not close the dialog", async ({ page }) => {
   await mount(page, { mode: "protocol" });
   const trigger = page.getByRole("button", { name: "Report Bug", exact: true });
   await trigger.click();
@@ -544,6 +549,11 @@ test("protocol 2 is ignored and a legacy close still works", async ({ page }) =>
   });
   await expect(page.getByRole("dialog")).toBeVisible();
   await post({ origin: serviceOrigin, data: { type: "bugbeacon:close", version: 1 } });
+  await expect(page.getByRole("dialog")).toBeVisible();
+  await post({
+    origin: serviceOrigin,
+    data: { source: "bugbeacon", protocol: 1, type: "close-request" },
+  });
   await expect(page.getByRole("dialog")).toBeHidden();
   await expect(trigger).toBeFocused();
 });

@@ -95,11 +95,11 @@ Form to parent:
 
 `source` is the product key. FeatureFountain uses the same shapes with `"source": "featurefountain"`.
 
-Legacy 0.1.0 messages still work. The form sends `{ "type": "bugbeacon:ready", "version": 1 }`, the SDK replies `{ "type": "bugbeacon:init", "version": 1 }`, and `{ "type": "bugbeacon:close", "version": 1 }` closes the dialog. A form that does not receive `embed=1` and `handshake` keeps its own close button. TODO(Matthew): set the date when these legacy messages are removed.
+0.2.0 replaces 0.1.0 embeds. The SDK does not accept `bugbeacon:ready`, `bugbeacon:init`, or `bugbeacon:close`.
 
 ## Version negotiation
 
-The handshake `protocol` number is the highest version the page speaks. This SDK speaks `1`. A message with a higher `protocol` number is ignored. The dialog stays open, and `resize` or `close-request` at that version does nothing. If the form also sends a legacy `bugbeacon:ready` or `bugbeacon:close` message with `version: 1`, that message still works. That is the fallback.
+The handshake `protocol` number is the highest version the page speaks. This SDK speaks `1`. A message with a higher `protocol` number is ignored. The dialog stays open, and `resize` or `close-request` at that version does nothing.
 
 `resize` is applied only after that handshake. A `resize` that arrives first is kept and used once `ready` has been answered.
 

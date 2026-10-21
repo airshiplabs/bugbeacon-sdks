@@ -101,9 +101,6 @@ var BugBeacon = (() => {
   function embedUrl(serviceOrigin, projectId, parentOrigin) {
     return `${serviceOrigin}/embed/${encodeURIComponent(projectId)}?${embedSearch(parentOrigin)}`;
   }
-  function legacyInitMessage() {
-    return { type: "bugbeacon:init", version: 1 };
-  }
   function handshakeMessage() {
     return { source: messageSource, protocol: protocolVersion, type: "handshake", embed: true };
   }
@@ -124,11 +121,6 @@ var BugBeacon = (() => {
     const message = plainRecord(data);
     if (!message) return null;
     const keys = Object.keys(message);
-    if (keys.length === 2 && message.version === 1) {
-      if (message.type === "bugbeacon:ready") return { kind: "legacy-ready" };
-      if (message.type === "bugbeacon:close") return { kind: "legacy-close" };
-      return null;
-    }
     if (message.source !== messageSource || message.protocol !== protocolVersion) return null;
     if (message.type === "ready" || message.type === "close-request" || message.type === "submitted") {
       return keys.length === 3 ? { kind: message.type } : null;
@@ -327,14 +319,12 @@ var BugBeacon = (() => {
           return;
         const message = parseHostMessage(event.data);
         if (!message) return;
-        if (message.kind === "legacy-ready") {
-          this.postToFrame(legacyInitMessage());
-        } else if (message.kind === "ready") {
+        if (message.kind === "ready") {
           this.protocolReady = true;
           this.postHandshake();
           this.postTheme();
           this.flushPendingHeight();
-        } else if (message.kind === "legacy-close" || message.kind === "close-request") {
+        } else if (message.kind === "close-request") {
           this.close();
         } else if (message.kind === "resize") {
           if (!this.protocolReady) this.pendingHeight = message.height;

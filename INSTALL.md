@@ -90,7 +90,7 @@ There are no other element attributes, properties, or slots in this SDK. Theme v
 {endpoint}/embed/{encodeURIComponent(project-id)}?origin={encodeURIComponent(window.location.origin)}&embed=1
 ```
 
-The widget sends only the public project ID (percent-encoded in the path), the parent page’s `window.location.origin` (not path, query, or hash), and `embed=1`. `embed=1` plus the handshake message tells the hosted form to hide its own close button. A 0.1.0 embed without those signals stays in legacy mode. The widget does not attach application version or environment name.
+The widget sends only the public project ID (percent-encoded in the path), the parent page’s `window.location.origin` (not path, query, or hash), and `embed=1`. `embed=1` plus the handshake message tells the hosted form to hide its own close button. 0.2.0 replaces 0.1.0 embeds and does not accept the old messages. The widget does not attach application version or environment name.
 
 ### Environment variables (host app conventions)
 
@@ -236,9 +236,7 @@ On the **host page** CSP:
 
 The iframe loads BugBeacon’s embed document and form; challenge and API requests run inside that document’s origin. The parent widget only uses `postMessage` with the configured `endpoint` origin.
 
-Protocol 1 messages are plain objects with exact keys. Messages with extra keys are rejected. The form sends `ready`, `resize` (`height` integer 1–4096; the iframe is raised to 100px when the value is smaller), `close-request`, and `submitted`. The handshake `protocol` number is the highest version the page speaks. An unknown `protocol` number is ignored, and legacy `version: 1` messages still work. See the README for that rule and for the optional `channel` id. After `ready`, the SDK sends `handshake` (`embed: true`) and then `theme` (`accent`, `colorScheme`, `labels`). See [README](README.md) for the JSON shapes.
-
-Legacy messages still work: form `bugbeacon:ready` (`version: 1`), SDK reply `bugbeacon:init` (`version: 1`), form `bugbeacon:close` (`version: 1`).
+Protocol 1 messages are plain objects with exact keys. Messages with extra keys are rejected. The form sends `ready`, `resize` (`height` integer 1–4096; the iframe is raised to 100px when the value is smaller), `close-request`, and `submitted`. The handshake `protocol` number is the highest version the page speaks. An unknown `protocol` number is ignored. 0.1.0 `bugbeacon:ready`, `bugbeacon:init`, and `bugbeacon:close` messages are not accepted. See the README for that rule and for the optional `channel` id. After `ready`, the SDK sends `handshake` (`embed: true`) and then `theme` (`accent`, `colorScheme`, `labels`). See [README](README.md) for the JSON shapes.
 
 ## GitHub and BugBeacon setup
 
