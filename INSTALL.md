@@ -1,4 +1,4 @@
-# Install BugBeacon in a host application
+# Install Bug Beacon in a host application
 
 This guide is for coding agents and developers wiring `@bugbeacon/browser` or the hosted script into an existing app. The custom element tag name is **`bug-beacon`**.
 
@@ -6,9 +6,9 @@ Product site: [bugbeacon.ai](https://bugbeacon.ai). User-facing docs: [bugbeacon
 
 ## What you are installing
 
-- A **Report Bug** button (custom element `<bug-beacon>`) that opens BugBeacon’s hosted form in a modal iframe.
+- A **Report Bug** button (custom element `<bug-beacon>`) that opens Bug Beacon’s hosted form in a modal iframe.
 - Reporters type in the iframe. The widget does not read report text, cookies, storage, or host DOM contents.
-- Submissions are delivered to a **GitHub Project (Projects v2)** as **draft items**. GitHub tokens and project wiring stay on the BugBeacon service, not in your page.
+- Submissions are delivered to a **GitHub Project (Projects v2)** as **draft items**. GitHub tokens and project wiring stay on the Bug Beacon service, not in your page.
 
 ## Choose script tag or npm
 
@@ -62,7 +62,7 @@ The element observes only these attributes (see `src/index.ts`):
 | Attribute    | Required | Value                                                                         |
 | ------------ | -------- | ----------------------------------------------------------------------------- |
 | `project-id` | Yes      | Public application UUID (RFC 4122 version 4). Invalid IDs disable the button. |
-| `endpoint`   | Yes      | BugBeacon service origin. Production: `https://bugbeacon.ai`.                 |
+| `endpoint`   | Yes      | Bug Beacon service origin. Production: `https://bugbeacon.ai`.                |
 
 **`endpoint` rules:**
 
@@ -71,7 +71,7 @@ The element observes only these attributes (see `src/index.ts`):
 - **HTTP** is allowed only when the endpoint hostname and the host page hostname are both exactly `localhost`. `127.0.0.1` and `::1` are not accepted for HTTP.
 - Invalid `project-id` or `endpoint` disables the button and shows: _Bug reporting is unavailable. Check the widget configuration._
 
-Optional theme attributes (all fall back to BugBeacon defaults when missing or invalid):
+Optional theme attributes (all fall back to Bug Beacon defaults when missing or invalid):
 
 | Attribute      | Default        | Value                                                       |
 | -------------- | -------------- | ----------------------------------------------------------- |
@@ -115,7 +115,7 @@ Never put GitHub tokens or other secrets in these variables or in HTML.
 
 Place `<bug-beacon>` where the button should appear (header, footer, or settings area). One element is enough for most apps; multiple elements are supported.
 
-For local development against a loopback BugBeacon service, set `endpoint` to that service origin (for example `http://localhost:3000` in `examples/index.html`) and allow the host origin in BugBeacon (see below).
+For local development against a loopback Bug Beacon service, set `endpoint` to that service origin (for example `http://localhost:3000` in `examples/index.html`) and allow the host origin in Bug Beacon (see below).
 
 ## npm integration by framework
 
@@ -234,11 +234,11 @@ On the **host page** CSP:
 | `script-src` | `https://bugbeacon.ai` when using the hosted widget script (or your origin if you self-host `bugbeacon.js`) |
 | `frame-src`  | The configured `endpoint` origin (for example `https://bugbeacon.ai`)                                       |
 
-The iframe loads BugBeacon’s embed document and form; challenge and API requests run inside that document’s origin. The parent widget only uses `postMessage` with the configured `endpoint` origin.
+The iframe loads Bug Beacon’s embed document and form; challenge and API requests run inside that document’s origin. The parent widget only uses `postMessage` with the configured `endpoint` origin.
 
 Protocol 1 messages are plain objects with exact keys. Messages with extra keys are rejected. The form sends `ready`, `resize` (`height` integer 1–4096; the iframe is raised to 100px when the value is smaller), `close-request`, and `submitted`. The handshake `protocol` number is the highest version the page speaks. An unknown `protocol` number is ignored. 0.1.0 `bugbeacon:ready`, `bugbeacon:init`, and `bugbeacon:close` messages are not accepted. See the README for that rule and for the optional `channel` id. After `ready`, the SDK sends `handshake` (`embed: true`) and then `theme` (`accent`, `colorScheme`, `labels`). See [README](README.md) for the JSON shapes.
 
-## GitHub and BugBeacon setup
+## GitHub and Bug Beacon setup
 
 ### Steps a coding agent can do in the host repo
 
@@ -249,22 +249,22 @@ Protocol 1 messages are plain objects with exact keys. Messages with extra keys 
 - Add CSP `script-src` / `frame-src` entries when the app uses a strict policy.
 - Run the app locally and confirm the **Report Bug** button is enabled (not showing the unavailable message).
 
-### Human-only steps (BugBeacon dashboard)
+### Human-only steps (Bug Beacon dashboard)
 
 These require signing in at [bugbeacon.ai/sign-in](https://bugbeacon.ai/sign-in) with **GitHub**. Reporters on your site do **not** need GitHub.
 
 1. **Sign in** with GitHub at [bugbeacon.ai](https://bugbeacon.ai).
-2. **Register the application** (name and settings in the BugBeacon dashboard).
+2. **Register the application** (name and settings in the Bug Beacon dashboard).
 3. **Allow exact origins** that will host the widget, including production URLs and local dev origins (for example `http://localhost:4100`). `http://localhost:4100` and `http://127.0.0.1:4100` are different origins; allow the one you use consistently.
 4. **Connect a GitHub Project** you can edit (GitHub Projects v2). Reports are created as **draft items** in that project.
-5. **Create the per-app GitHub token** in BugBeacon when prompted. Use a token with **only the access BugBeacon requests in that UI** (terms: [bugbeacon.ai/terms](https://bugbeacon.ai/terms)). Store tokens only in BugBeacon, never in the host app or repository.
+5. **Create the per-app GitHub token** in Bug Beacon when prompted. Use a token with **only the access Bug Beacon requests in that UI** (terms: [bugbeacon.ai/terms](https://bugbeacon.ai/terms)). Store tokens only in Bug Beacon, never in the host app or repository.
 6. Copy the **public project ID** (UUID) from the dashboard into `project-id` or your env vars.
 
 If any human step is incomplete, fix it in the dashboard before debugging the host app.
 
 ## Verify end-to-end
 
-1. Run the host app on an origin listed in BugBeacon.
+1. Run the host app on an origin listed in Bug Beacon.
 2. Click **Report Bug**. The modal should load the embed (`data-initialized` / form visible).
 3. Submit a test report in the hosted form.
 4. Open the connected GitHub Project and confirm a new **draft** item appears.
@@ -275,20 +275,20 @@ Local example in this repo: set `project-id` and `endpoint` in `examples/index.h
 python3 -m http.server 4100
 ```
 
-Open `http://localhost:4100/examples/` and allow `http://localhost:4100` in BugBeacon application settings.
+Open `http://localhost:4100/examples/` and allow `http://localhost:4100` in Bug Beacon application settings.
 
 ## Troubleshooting
 
-| Symptom                                                  | Likely cause                        | Fix                                                                                                                            |
-| -------------------------------------------------------- | ----------------------------------- | ------------------------------------------------------------------------------------------------------------------------------ |
-| Button disabled; “Bug reporting is unavailable…”         | Invalid `project-id` or `endpoint`  | Use a version-4 UUID and a bare origin (`https://bugbeacon.ai`). No path, query, or credentials.                               |
-| Button disabled on local HTTP                            | Page or endpoint is not `localhost` | Use `http://localhost` for both, or use HTTPS. `127.0.0.1` is not an HTTP exception.                                           |
-| Embed loads but submission fails or is rejected          | Origin not allowlisted              | Add the exact `window.location.origin` in BugBeacon application settings.                                                      |
-| Works on `localhost` but not `127.0.0.1` (or vice versa) | Origin mismatch                     | Allow the origin you actually use; they are not interchangeable.                                                               |
-| Blank or blocked iframe                                  | CSP `frame-src`                     | Allow the `endpoint` origin.                                                                                                   |
-| Script does not load                                     | CSP `script-src`                    | Allow `https://bugbeacon.ai` (or your self-hosted script origin).                                                              |
-| Custom element unknown / no button                       | npm without registration            | Call `defineBugBeacon()` in the browser before rendering `<bug-beacon>`.                                                       |
-| Nothing reaches GitHub                                   | GitHub token or project connection  | Reconnect the project or replace the token in the BugBeacon dashboard (human-only). Revoke old tokens in GitHub when rotating. |
+| Symptom                                                  | Likely cause                        | Fix                                                                                                                             |
+| -------------------------------------------------------- | ----------------------------------- | ------------------------------------------------------------------------------------------------------------------------------- |
+| Button disabled; “Bug reporting is unavailable…”         | Invalid `project-id` or `endpoint`  | Use a version-4 UUID and a bare origin (`https://bugbeacon.ai`). No path, query, or credentials.                                |
+| Button disabled on local HTTP                            | Page or endpoint is not `localhost` | Use `http://localhost` for both, or use HTTPS. `127.0.0.1` is not an HTTP exception.                                            |
+| Embed loads but submission fails or is rejected          | Origin not allowlisted              | Add the exact `window.location.origin` in Bug Beacon application settings.                                                      |
+| Works on `localhost` but not `127.0.0.1` (or vice versa) | Origin mismatch                     | Allow the origin you actually use; they are not interchangeable.                                                                |
+| Blank or blocked iframe                                  | CSP `frame-src`                     | Allow the `endpoint` origin.                                                                                                    |
+| Script does not load                                     | CSP `script-src`                    | Allow `https://bugbeacon.ai` (or your self-hosted script origin).                                                               |
+| Custom element unknown / no button                       | npm without registration            | Call `defineBugBeacon()` in the browser before rendering `<bug-beacon>`.                                                        |
+| Nothing reaches GitHub                                   | GitHub token or project connection  | Reconnect the project or replace the token in the Bug Beacon dashboard (human-only). Revoke old tokens in GitHub when rotating. |
 
 ## API surface (this package)
 

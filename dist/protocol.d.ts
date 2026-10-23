@@ -31,7 +31,7 @@ export type HostMessage = {
 };
 /** Iframe height for an accepted resize. Values under 100px are raised, not rejected. */
 export declare function clampFrameHeight(height: number): number;
-/** Theme from host attributes. Invalid optional values fall back to BugBeacon defaults. */
+/** Theme from host attributes. Invalid optional values fall back to Bug Beacon defaults. */
 export declare function themeFromAttributes(read: (name: string) => string | null): Theme;
 /** Query string for the embed document. Theme is never placed here. */
 export declare function embedSearch(parentOrigin: string): string;
