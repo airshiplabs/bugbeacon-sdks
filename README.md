@@ -1,4 +1,4 @@
-# BugBeacon
+# Bug Beacon
 
 Bug reports from your site go to GitHub Projects (Projects v2) as draft items.
 
@@ -7,7 +7,7 @@ Bug reports from your site go to GitHub Projects (Projects v2) as draft items.
 ## Install
 
 ```
-Tell your coding agent: Install BugBeacon by following https://github.com/airshiplabs/bugbeacon-sdks/blob/main/INSTALL.md
+Tell your coding agent: Install Bug Beacon by following https://github.com/airshiplabs/bugbeacon-sdks/blob/main/INSTALL.md
 ```
 
 Details: [INSTALL.md](INSTALL.md).
@@ -18,7 +18,7 @@ Free during early access.
 
 ## Theming
 
-Set these optional attributes on `<bug-beacon>`. Defaults match BugBeacon branding. The widget sends them to the hosted form after the form reports ready. It does not check your plan. The server decides which theme values to apply.
+Set these optional attributes on `<bug-beacon>`. Defaults match Bug Beacon branding. The widget sends them to the hosted form after the form reports ready. It does not check your plan. The server decides which theme values to apply.
 
 | Attribute      | Default        | What it changes                                     |
 | -------------- | -------------- | --------------------------------------------------- |
@@ -93,7 +93,7 @@ Form to parent:
 
 `submitted` leaves the dialog open and sets the status text to "Report submitted."
 
-`source` is the product key. FeatureFountain uses the same shapes with `"source": "featurefountain"`.
+`source` is the product key. Feature Fountain uses the same shapes with `"source": "featurefountain"`.
 
 0.2.0 replaces 0.1.0 embeds. The SDK does not accept `bugbeacon:ready`, `bugbeacon:init`, or `bugbeacon:close`.
 
@@ -109,7 +109,7 @@ Protocol 1 does not include a `channel` field, and this SDK does not send one. A
 
 ## Requirement
 
-You need a GitHub Project you can edit. Connect it in BugBeacon. Your users do not need GitHub accounts.
+You need a GitHub Project you can edit. Connect it in Bug Beacon. Your users do not need GitHub accounts.
 
 ## Contact
 

@@ -77,7 +77,7 @@ function label(value: string | null, fallback: string): string {
   return trimmed;
 }
 
-/** Theme from host attributes. Invalid optional values fall back to BugBeacon defaults. */
+/** Theme from host attributes. Invalid optional values fall back to Bug Beacon defaults. */
 export function themeFromAttributes(read: (name: string) => string | null): Theme {
   const accent = read("accent");
   const scheme = read("color-scheme");

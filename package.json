@@ -1,7 +1,7 @@
 {
   "name": "@bugbeacon/browser",
   "version": "0.2.0",
-  "description": "Browser SDK with an accessible Report Bug button for the BugBeacon hosted form.",
+  "description": "Browser SDK with an accessible Report Bug button for the Bug Beacon hosted form.",
   "homepage": "https://bugbeacon.ai",
   "bugs": {
     "url": "https://github.com/airshiplabs/bugbeacon-sdks/issues"
