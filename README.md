@@ -1,6 +1,6 @@
 # Bug Beacon
 
-Bug reports from your site go to GitHub Projects (Projects v2) as draft items.
+Bug Beacon makes it easy for users to report bugs and for small software teams to act on them. This browser SDK adds an accessible Report Bug button to any web app that opens your hosted Bug Beacon form. Learn more at https://bugbeacon.ai.
 
 <!-- PLACEHOLDER: Add a screenshot or GIF of the Report Bug button and hosted form here. -->
 
