@@ -46,8 +46,9 @@
     "lint:fix": "oxlint --fix .",
     "format": "oxfmt .",
     "format:check": "oxfmt --check .",
-    "test": "npm run build && node --experimental-strip-types --test tests/*.test.ts && playwright test",
-    "check": "npm run format:check && npm run lint && npm run typecheck && node scripts/check-vector-hash.mjs && npm test"
+    "test": "node --test scripts/file-token-limit.test.mjs && npm run build && node --experimental-strip-types --test tests/*.test.ts && playwright test",
+    "check": "npm run format:check && npm run lint && npm run typecheck && node scripts/check-vector-hash.mjs && npm test",
+    "prepare": "node scripts/install-git-hooks.mjs"
   },
   "devDependencies": {
     "@playwright/test": "1.64.1",

@@ -129,4 +129,6 @@ npx playwright install chromium firefox webkit
 npm run check
 ```
 
+`npm ci` installs a pre-commit hook in `.git/hooks`. It rejects any staged file over 5,000 tokens (20,000 bytes). Split the file, or, if it is generated, add its path to the ignore list in `scripts/file-token-limit.mjs`. Lockfiles, `dist/`, and other generated or binary files are already ignored. If you set `core.hooksPath`, chain `node scripts/file-token-limit.mjs` from that hook.
+
 See [INSTALL.md](INSTALL.md) for embedding the widget in a host application.
