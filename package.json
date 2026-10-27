@@ -1,7 +1,21 @@
 {
   "name": "@bugbeacon/browser",
-  "version": "0.2.0",
-  "description": "Browser SDK with an accessible Report Bug button for the Bug Beacon hosted form.",
+  "version": "0.2.1",
+  "description": "Browser SDK for Bug Beacon: add an accessible Report Bug button to any web app that opens your hosted bug report form.",
+  "keywords": [
+    "browser",
+    "bug-beacon",
+    "bug-report",
+    "bug-reporting",
+    "bug-tracker",
+    "feedback",
+    "feedback-button",
+    "feedback-widget",
+    "issue-tracker",
+    "qa",
+    "report-bug",
+    "widget"
+  ],
   "homepage": "https://bugbeacon.ai",
   "bugs": {
     "url": "https://github.com/airshiplabs/bugbeacon-sdks/issues"
@@ -9,7 +23,8 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/airshiplabs/bugbeacon-sdks.git"
+    "url": "git+https://github.com/airshiplabs/bugbeacon-sdks.git",
+    "directory": "."
   },
   "files": [
     "dist",

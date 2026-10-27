@@ -1,4 +1,4 @@
-/*! @bugbeacon/browser v0.2.0 | MIT License | https://github.com/airshiplabs/bugbeacon-sdks */
+/*! @bugbeacon/browser v0.2.1 | MIT License | https://github.com/airshiplabs/bugbeacon-sdks */
 
 // src/protocol.ts
 var protocolVersion = 1;
