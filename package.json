@@ -66,11 +66,11 @@
     "prepare": "node scripts/install-git-hooks.mjs"
   },
   "devDependencies": {
-    "@playwright/test": "1.64.1",
+    "@playwright/test": "1.65.0",
     "@typescript/native": "npm:typescript@7.0.2",
     "esbuild": "0.28.2",
-    "oxfmt": "0.75.0",
-    "oxlint": "1.90.0",
+    "oxfmt": "0.77.0",
+    "oxlint": "1.92.0",
     "typescript": "6.0.3"
   },
   "engines": {
