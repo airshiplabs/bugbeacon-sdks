@@ -5,7 +5,7 @@ on:
   push:
     branches: [main]
   schedule:
-    - cron: "41 9 * * 1"   # Mondays 09:41 UTC: full scan
+    - cron: "41 9 * * 1" # Mondays 09:41 UTC: full scan
   workflow_dispatch:
 
 permissions: {}
@@ -33,7 +33,7 @@ jobs:
         run: git config --global --add safe.directory "$GITHUB_WORKSPACE"
 
       - name: Semgrep CE scan (report-only until 2026-12-04)
-        continue-on-error: true   # Phase 1. Remove in Phase 2.
+        continue-on-error: true # Phase 1. Remove in Phase 2.
         env:
           EVENT: ${{ github.event_name }}
           PR_BASE: ${{ github.event.pull_request.base.sha }}

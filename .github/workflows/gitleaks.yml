@@ -5,7 +5,7 @@ on:
   push:
     branches: [main]
   schedule:
-    - cron: "23 9 * * 1"   # Mondays 09:23 UTC: full-history scan
+    - cron: "23 9 * * 1" # Mondays 09:23 UTC: full-history scan
   workflow_dispatch:
 
 permissions: {}
