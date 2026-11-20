@@ -50,6 +50,11 @@ jobs:
           [ "$EVENT" = "pull_request" ] && args+=(--baseline-commit "$PR_BASE")
           semgrep "${args[@]}"
 
+      - name: Require the SARIF report
+        if: always() && github.actor != 'dependabot[bot]'
+        shell: sh
+        run: test -s semgrep.sarif
+
       - name: Upload SARIF to code scanning
         if: >-
           always() && hashFiles('semgrep.sarif') != '' &&
