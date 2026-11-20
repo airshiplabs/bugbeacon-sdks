@@ -33,7 +33,9 @@ jobs:
         run: git config --global --add safe.directory "$GITHUB_WORKSPACE"
 
       - name: Semgrep CE scan (report-only until 2026-12-04)
+        # Container jobs default to sh, which rejects the bash array below.
         continue-on-error: true # Phase 1. Remove in Phase 2.
+        shell: bash
         env:
           EVENT: ${{ github.event_name }}
           PR_BASE: ${{ github.event.pull_request.base.sha }}
