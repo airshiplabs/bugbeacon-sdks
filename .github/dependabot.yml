@@ -10,7 +10,7 @@ updates:
     open-pull-requests-limit: 5
     # Version updates only; security updates are never delayed by cooldown.
     cooldown:
-      default-days: 3
+      default-days: 7
       semver-major-days: 14
     ignore:
       # Pin typescript to v6 for tooling that still needs the TypeScript JS
@@ -41,6 +41,10 @@ updates:
       day: "monday"
       time: "06:00"
       timezone: "America/Denver"
+    # Version updates only; security updates are never delayed by cooldown.
+    # This ecosystem rejects semver-major-days, semver-minor-days, and semver-patch-days.
+    cooldown:
+      default-days: 7
     groups:
       actions:
         patterns:
